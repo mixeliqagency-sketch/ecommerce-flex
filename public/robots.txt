@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /checkout/
+Disallow: /cuenta/
+Disallow: /tracking/
+
+# Bloquear crawlers de IA para proteger el contenido
+User-agent: GPTBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+Sitemap: https://aoura-salud.vercel.app/sitemap.xml
