@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { themeConfig } from "@/theme.config";
 
 export default function RegistroPage() {
   const router = useRouter();
@@ -66,7 +67,7 @@ export default function RegistroPage() {
       {/* Logo */}
       <div className="text-center mb-5">
         <p className="text-3xl mb-1">
-          <span className="text-accent-emerald tracking-wider drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" style={{ fontFamily: "var(--font-logo)" }}>AOURA</span>
+          <span className="text-accent-emerald tracking-wider drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" style={{ fontFamily: "var(--font-heading)" }}>{themeConfig.brand.name}</span>
         </p>
         <h1 className="font-heading text-lg font-bold">
           Crear cuenta

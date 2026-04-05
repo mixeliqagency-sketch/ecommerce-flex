@@ -1,7 +1,7 @@
-// Service Worker para AOURA PWA
+// Service Worker para PWA e-commerce template
 // Estrategia: cache-first para assets estaticos, network-first para paginas
 
-const CACHE_NAME = "aoura-v2";
+const CACHE_NAME = "shop-v1";
 
 // Recursos criticos para precachear en install
 const PRECACHE_URLS = ["/", "/offline"];

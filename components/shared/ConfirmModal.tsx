@@ -1,6 +1,6 @@
 "use client";
 
-// Modal de confirmacion con el diseño de AOURA
+// Modal de confirmacion con el diseño de la tienda
 // Reemplaza window.confirm() para mantener consistencia visual
 
 interface ConfirmModalProps {

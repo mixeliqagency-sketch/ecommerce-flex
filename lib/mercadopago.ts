@@ -59,7 +59,7 @@ export async function createPreference({
       },
       ...(isProduction && { auto_return: "approved" as const }),
       external_reference: orderId,
-      statement_descriptor: "AOURA",
+      statement_descriptor: "TIENDA",
     },
   });
 

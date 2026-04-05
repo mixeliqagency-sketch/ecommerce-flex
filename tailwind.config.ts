@@ -10,6 +10,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Fondos — leidos de CSS variables (generadas desde theme.config.ts)
         bg: {
           primary: "var(--bg-primary)",
           secondary: "var(--bg-secondary)",
@@ -19,18 +20,20 @@ const config: Config = {
         border: {
           glass: "var(--border-glass)",
         },
+        // Texto
         text: {
           primary: "var(--text-primary)",
           secondary: "var(--text-secondary)",
           muted: "var(--text-muted)",
         },
+        // Colores de acento — leidos de CSS variables para cambio dinamico
         accent: {
-          emerald: "#10B981",
-          orange: "#F97316",
-          blue: "#3B82F6",
-          red: "#EF4444",
-          yellow: "#FBBF24",
-          success: "#34D399",
+          emerald: "var(--color-primary)",
+          orange: "var(--color-secondary)",
+          blue: "var(--color-accent)",
+          red: "var(--color-danger)",
+          yellow: "var(--color-secondary)",
+          success: "var(--color-success)",
         },
       },
       fontFamily: {
@@ -38,11 +41,9 @@ const config: Config = {
         body: ["var(--font-body)", "sans-serif"],
       },
       borderRadius: {
-        card: "16px",
-        pill: "100px",
-      },
-      backdropBlur: {
-        glass: "20px",
+        card: "var(--radius-card)",
+        button: "var(--radius-button)",
+        pill: "var(--radius-pill)",
       },
     },
   },

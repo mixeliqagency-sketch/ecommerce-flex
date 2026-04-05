@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import ReviewCard from "./ReviewCard";
 import StarRating from "./StarRating";
+import { themeConfig } from "@/theme.config";
 import type { Review } from "@/types";
 
 // Testimonios fallback para cuando no hay resenas reales
@@ -10,43 +11,43 @@ const FALLBACK_TESTIMONIALS = [
   {
     name: "Martin G.",
     rating: 5,
-    text: "La creatina que compre es de primera calidad. Llego rapido y el packaging es impecable. NIA me ayudo a elegir la dosis correcta.",
-    product: "Creatina Monohidrato",
+    text: "El producto que compre es de primera calidad. Llego rapido y el packaging es impecable. Muy contento con la compra.",
+    product: "Producto destacado",
     date: "Hace 2 semanas",
   },
   {
     name: "Luciana R.",
     rating: 5,
-    text: "Me encanta la app! El fitness tracker con el mapa muscular es genial, y tener a NIA para consultar sobre nutricion gratis es increible.",
-    product: "App AOURA",
+    text: "Me encanta la tienda! Facil de navegar, buenos precios y el envio fue super rapido. Ya les recomende a varias amigas.",
+    product: "Compra general",
     date: "Hace 1 semana",
   },
   {
     name: "Federico P.",
     rating: 4,
-    text: "Los suplementos son buenos y los precios competitivos. Lo mejor es que podes consultar con NIA antes de comprar para saber que necesitas realmente.",
-    product: "Proteina Whey",
+    text: "Los productos son buenos y los precios competitivos. La atencion al cliente es excelente, me respondieron todas las dudas al instante.",
+    product: "Atencion al cliente",
     date: "Hace 3 dias",
   },
   {
     name: "Camila V.",
     rating: 5,
-    text: "Arranque a trackear mis entrenamientos aca y no vuelvo mas a otra app. Ver que musculos trabaje en el mapa es super motivador.",
-    product: "Fitness Tracker",
+    text: "Hice mi primer pedido y quede encantada. Todo llego bien embalado y en perfecto estado. Seguro vuelvo a comprar.",
+    product: "Primer pedido",
     date: "Hace 5 dias",
   },
   {
     name: "Santiago M.",
     rating: 5,
-    text: "El plan de suplementacion que me armo NIA fue exactamente lo que necesitaba. Ahorre plata comprando solo lo que sirve para mi objetivo.",
-    product: "Plan NIA",
+    text: "La variedad de productos es genial y siempre tienen ofertas. Me ahorre bastante comparado con otras tiendas.",
+    product: "Ofertas",
     date: "Hace 1 semana",
   },
   {
     name: "Valentina A.",
     rating: 4,
-    text: "Compre colageno y ashwagandha. Envio rapido y buena atencion. La seccion de aprender tiene videos muy buenos sobre longevidad.",
-    product: "Colageno + Ashwagandha",
+    text: "Compre varios productos en combo y salio muy bien de precio. Envio rapido y buena atencion. La seccion de novedades esta buenisima.",
+    product: "Combo de productos",
     date: "Hace 4 dias",
   },
 ];
@@ -192,7 +193,7 @@ export default function ReviewCarousel() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <p className="text-accent-emerald text-xs font-semibold uppercase tracking-wider mb-1">
-            Comunidad AOURA
+            Comunidad {themeConfig.brand.name}
           </p>
           <h2 className="font-heading text-2xl font-bold">
             Lo que dicen nuestros usuarios

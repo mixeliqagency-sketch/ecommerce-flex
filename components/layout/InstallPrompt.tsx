@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { themeConfig } from "@/theme.config";
 
 // Interfaz para el evento beforeinstallprompt (no esta en los tipos de TS)
 interface BeforeInstallPromptEvent extends Event {
@@ -25,7 +26,7 @@ export default function InstallPrompt() {
     // Verificar si ya fue descartado
     let wasDismissed = false;
     try {
-      wasDismissed = !!localStorage.getItem("aura_install_dismissed");
+      wasDismissed = !!localStorage.getItem("shop_install_dismissed");
     } catch { /* Safari privado */ }
 
     if (wasDismissed) return;
@@ -65,7 +66,7 @@ export default function InstallPrompt() {
 
   const handleDismiss = () => {
     setShow(false);
-    try { localStorage.setItem("aura_install_dismissed", "true"); } catch { /* Safari privado */ }
+    try { localStorage.setItem("shop_install_dismissed", "true"); } catch { /* Safari privado */ }
   };
 
   if (!show) return null;
@@ -82,7 +83,7 @@ export default function InstallPrompt() {
           </svg>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-heading font-bold text-sm text-text-primary">Instalar AOURA</p>
+          <p className="font-heading font-bold text-sm text-text-primary">Instalar {themeConfig.brand.name}</p>
           <p className="text-xs text-text-secondary mt-0.5">
             {isManual
               ? "Toca el menu del navegador y selecciona \"Agregar a pantalla de inicio\""

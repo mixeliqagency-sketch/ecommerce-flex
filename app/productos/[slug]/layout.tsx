@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getProductBySlug } from "@/lib/google-sheets";
 import JsonLd from "@/components/seo/JsonLd";
+import { themeConfig } from "@/theme.config";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -48,7 +49,7 @@ export default async function Layout({ params, children }: Props) {
           "brand": { "@type": "Brand", "name": product.marca },
           "offers": {
             "@type": "Offer",
-            "url": `https://aoura-salud.vercel.app/productos/${product.slug}`,
+            "url": `${themeConfig.brand.url}/productos/${product.slug}`,
             "priceCurrency": "ARS",
             "price": product.precio,
             "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",

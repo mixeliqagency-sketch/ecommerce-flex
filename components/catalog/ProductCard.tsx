@@ -9,6 +9,7 @@ import { useCart } from "@/context/CartContext";
 import { useReviews } from "@/context/ReviewsContext";
 import StarRating from "@/components/reviews/StarRating";
 import ShareButton from "@/components/shared/ShareButton";
+import { themeConfig } from "@/theme.config";
 import type { Product } from "@/types";
 
 interface ProductCardProps {
@@ -139,7 +140,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             </button>
             <ShareButton
               title={product.nombre}
-              text={`Mira ${product.nombre} en AOURA`}
+              text={`Mira ${product.nombre} en ${themeConfig.brand.name}`}
               url={typeof window !== "undefined" ? `${window.location.origin}/productos/${product.slug}` : `/productos/${product.slug}`}
               variant="icon"
             />
@@ -153,7 +154,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             </p>
             <ShareButton
               title={product.nombre}
-              text={`Mira ${product.nombre} en AOURA`}
+              text={`Mira ${product.nombre} en ${themeConfig.brand.name}`}
               url={typeof window !== "undefined" ? `${window.location.origin}/productos/${product.slug}` : `/productos/${product.slug}`}
               variant="icon"
             />
@@ -170,7 +171,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             </Link>
             <ShareButton
               title={product.nombre}
-              text={`Mira ${product.nombre} en AOURA`}
+              text={`Mira ${product.nombre} en ${themeConfig.brand.name}`}
               url={typeof window !== "undefined" ? `${window.location.origin}/productos/${product.slug}` : `/productos/${product.slug}`}
               variant="icon"
             />

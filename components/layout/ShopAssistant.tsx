@@ -8,8 +8,22 @@ import { themeConfig } from "@/theme.config";
 
 const { assistant, contact, brand } = themeConfig;
 
-// Avatar de la asistente — configurable desde theme.config.ts
+// Avatar de la asistente — si hay foto en /public/ la usa, sino muestra inicial
 function AssistantAvatar({ size = 48 }: { size?: number }) {
+  const [imgError, setImgError] = useState(false);
+  const initial = assistant.name.charAt(0).toUpperCase();
+
+  if (imgError || !assistant.avatar) {
+    return (
+      <div
+        className="rounded-full flex items-center justify-center bg-accent-emerald text-white font-bold"
+        style={{ width: size, height: size, fontSize: size * 0.45 }}
+      >
+        {initial}
+      </div>
+    );
+  }
+
   return (
     <img
       src={assistant.avatar}
@@ -18,6 +32,7 @@ function AssistantAvatar({ size = 48 }: { size?: number }) {
       height={size}
       className="rounded-full object-cover"
       style={{ width: size, height: size, objectPosition: "center 30%" }}
+      onError={() => setImgError(true)}
     />
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 // =============================================
-// Sistema de analytics invisible para AOURA
+// Sistema de analytics invisible para la tienda
 // Captura eventos del usuario sin afectar la experiencia
 // Los acumula en memoria y los envia en batch a Google Sheets
 // =============================================
@@ -28,13 +28,13 @@ let analyticsInitialized = false;
 // Generar ID de sesion unico
 function getSessionId(): string {
   if (sessionId) return sessionId;
-  const stored = sessionStorage.getItem("aura_session_id");
+  const stored = sessionStorage.getItem("shop_session_id");
   if (stored) {
     sessionId = stored;
     return stored;
   }
   sessionId = `s-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  sessionStorage.setItem("aura_session_id", sessionId);
+  sessionStorage.setItem("shop_session_id", sessionId);
   return sessionId;
 }
 
@@ -62,10 +62,10 @@ function captureUtmParams(): void {
       campaign: campaign || "",
     };
     // Guardar en sessionStorage para que persistan durante la visita
-    sessionStorage.setItem("aura_utm", JSON.stringify(utmParams));
+    sessionStorage.setItem("shop_utm", JSON.stringify(utmParams));
   } else {
     // Intentar recuperar de sessionStorage
-    const stored = sessionStorage.getItem("aura_utm");
+    const stored = sessionStorage.getItem("shop_utm");
     if (stored) {
       try {
         utmParams = JSON.parse(stored);
@@ -86,7 +86,7 @@ function flushEvents(): void {
   // Intentar obtener email del usuario
   let userEmail = "";
   try {
-    const profile = localStorage.getItem("aura_nia_profile");
+    const profile = localStorage.getItem("shop_user_profile");
     if (profile) {
       const parsed = JSON.parse(profile);
       if (parsed.email) userEmail = parsed.email;
@@ -95,18 +95,10 @@ function flushEvents(): void {
     // No pasa nada
   }
 
-  // Fire-and-forget — si falla, los eventos se pierden (aceptable para analytics)
-  fetch("/api/sync/evento", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      session_id: getSessionId(),
-      user_email: userEmail,
-      eventos: eventsToSend,
-    }),
-  }).catch(() => {
-    // Si falla, no reintentamos para no sobrecargar
-  });
+  // Analytics deshabilitado en template — activar cuando se tenga endpoint propio
+  // Para activar: crear /api/sync/evento y descomentar el fetch
+  // fetch("/api/sync/evento", { ... })
+  void eventsToSend;
 }
 
 // Programar envio de eventos cada 30 segundos

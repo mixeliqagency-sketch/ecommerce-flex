@@ -1,6 +1,6 @@
-# E-commerce Template
+# Ecommerce Flex
 
-Template de tienda online listo para usar. Next.js 14 + Google Sheets + MercadoPago + Asistente IA.
+Template adaptable de tienda online. Cambia `theme.config.ts` y tenes una tienda nueva en minutos. Next.js 14 + Google Sheets + MercadoPago + Asistente IA.
 
 ## Que incluye
 
@@ -21,8 +21,8 @@ Template de tienda online listo para usar. Next.js 14 + Google Sheets + MercadoP
 ### 1. Clonar el proyecto
 
 ```bash
-git clone https://github.com/mixeliqagency-sketch/ecommerce-template.git
-cd ecommerce-template
+git clone https://github.com/mixeliqagency-sketch/ecommerce-flex.git
+cd ecommerce-flex
 npm install
 ```
 

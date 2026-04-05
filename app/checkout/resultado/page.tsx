@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Suspense, useState } from "react";
+import { themeConfig } from "@/theme.config";
 
 // Opciones para "Como nos conociste"
 const FUENTES = [
@@ -126,9 +127,9 @@ function ResultadoContent() {
             Una ultima pregunta rapida:
           </p>
           <p className="font-heading font-semibold text-sm text-text-primary mb-3">
-            Como conociste AOURA?
+            Como nos conociste?
           </p>
-          <label htmlFor="fuente-select" className="sr-only">Como conociste AOURA</label>
+          <label htmlFor="fuente-select" className="sr-only">Como nos conociste</label>
           <select
             id="fuente-select"
             value={fuente}

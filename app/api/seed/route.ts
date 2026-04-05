@@ -408,7 +408,7 @@ export async function GET(request: Request) {
               "nombre",
               "apellido",
               "password_hash",
-              "perfil_nia",
+              "perfil_usuario",
               "created_at",
             ],
           ],

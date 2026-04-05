@@ -78,11 +78,15 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 glass" style={{ borderBottom: "1px solid #C9A96E" }}>
+      <header className="sticky top-0 z-30 glass" style={{ borderBottom: "1px solid var(--border-decorative)" }}>
         <div className="max-w-7xl mx-auto px-3 min-[400px]:px-4 h-14 flex items-center gap-2 min-[400px]:gap-3 md:gap-4">
           {/* Logo */}
           <Link href="/" className="flex-shrink-0">
-            <span className="text-accent-emerald text-xl min-[400px]:text-2xl tracking-wider drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" style={{ fontFamily: themeConfig.brand.logoFont }}>{themeConfig.brand.name}</span>
+            {themeConfig.brand.useLogo ? (
+              <img src={themeConfig.brand.logo} alt={themeConfig.brand.name} className="h-8 min-[400px]:h-10" />
+            ) : (
+              <span className="text-accent-emerald text-xl min-[400px]:text-2xl tracking-wider font-bold" style={{ fontFamily: "var(--font-heading)" }}>{themeConfig.brand.name}</span>
+            )}
           </Link>
 
           {/* Nav desktop */}

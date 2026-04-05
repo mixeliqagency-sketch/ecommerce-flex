@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { themeConfig } from "@/theme.config";
 
 // Interfaz para el evento de instalacion PWA
 interface BeforeInstallPromptEvent extends Event {
@@ -88,10 +89,10 @@ export default function LoginPage() {
       {/* Logo + descripcion de la app */}
       <div className="text-center mb-5">
         <p className="text-3xl mb-2">
-          <span className="text-accent-emerald tracking-wider drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" style={{ fontFamily: "var(--font-logo)" }}>AOURA</span>
+          <span className="text-accent-emerald tracking-wider drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" style={{ fontFamily: "var(--font-heading)" }}>{themeConfig.brand.name}</span>
         </p>
         <p className="text-sm text-text-secondary leading-relaxed max-w-xs mx-auto mb-4">
-          Tu gym, tu nutricionista y tus suplementos en una sola app. Gratis.
+          {themeConfig.brand.tagline}
         </p>
         <h1 className="font-heading text-lg font-bold">
           Iniciar sesion
@@ -186,7 +187,7 @@ export default function LoginPage() {
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              Instalar AOURA gratis
+              Instalar {themeConfig.brand.name} gratis
             </button>
           ) : showManualInstall ? (
             isInAppBrowser ? (
@@ -202,7 +203,7 @@ export default function LoginPage() {
                   <p className="font-heading font-bold text-sm text-text-primary">Abri en tu navegador</p>
                 </div>
                 <p className="text-xs text-text-secondary mb-2">
-                  Para instalar AOURA como app, necesitas abrir este link en Chrome o tu navegador.
+                  Para instalar {themeConfig.brand.name} como app, necesitas abrir este link en Chrome o tu navegador.
                 </p>
                 <button
                   type="button"
@@ -237,7 +238,7 @@ export default function LoginPage() {
                   </p>
                   <p className="flex items-start gap-2">
                     <span className="w-5 h-5 rounded-full bg-accent-emerald/15 text-accent-emerald text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
-                    <span>Listo — AOURA aparece como app en tu celular</span>
+                    <span>Listo — {themeConfig.brand.name} aparece como app en tu celular</span>
                   </p>
                 </div>
               </div>
@@ -254,7 +255,7 @@ export default function LoginPage() {
               <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
-            AOURA instalada! Buscala en tu pantalla de inicio
+            {themeConfig.brand.name} instalada! Buscala en tu pantalla de inicio
           </p>
         </div>
       )}

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+
+export const dynamic = "force-dynamic";
 import { getProducts } from "@/lib/google-sheets";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { INPUT_LIMITS } from "@/lib/validation";

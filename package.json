@@ -1,7 +1,7 @@
 {
-  "name": "ecommerce-template",
+  "name": "ecommerce-flex",
   "version": "1.0.0",
-  "description": "Template de e-commerce generico con Next.js, Google Sheets, MercadoPago y asistente IA",
+  "description": "Ecommerce Flex — Template adaptable de tienda online con Next.js, Google Sheets, MercadoPago y asistente IA",
   "author": "Mixeliq",
   "private": true,
   "scripts": {

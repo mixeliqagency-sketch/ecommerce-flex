@@ -63,10 +63,10 @@ export default function TopBar() {
   if (PROMOS.length === 0) return null;
 
   const promo = PROMOS[index];
-  const bgColor = isLight ? "#FAF6F0" : "#0A0A0B";
-  const textColor = isLight ? "#5C4A32" : "#FFFFFF";
-  const goldColor = isLight ? "#8B6914" : "#C9A96E";
-  const borderColor = isLight ? "#D4B896" : "#C9A96E";
+  const bgColor = isLight ? "var(--bg-secondary)" : "var(--bg-primary)";
+  const textColor = isLight ? "var(--text-primary)" : "var(--text-primary)";
+  const goldColor = "var(--color-primary)";
+  const borderColor = "var(--border-decorative)";
 
   return (
     <div

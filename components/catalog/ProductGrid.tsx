@@ -57,7 +57,7 @@ export default function ProductGrid({ products, loading, searchQuery }: ProductG
         <p className="text-text-muted text-sm mt-1 mb-4">
           Intenta con otra busqueda o categoria
         </p>
-        {/* Derivar a Kira si hay una busqueda activa */}
+        {/* Derivar al asistente si hay una busqueda activa */}
         {searchQuery && (
           <button
             onClick={() => openAssistant(`Busque "${searchQuery}" pero no encontre nada. Me podes ayudar?`)}

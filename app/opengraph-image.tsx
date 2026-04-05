@@ -1,8 +1,9 @@
-/* og-image generada dinamicamente con next/og — AOURA branding */
+/* og-image generada dinamicamente con next/og */
 import { ImageResponse } from "next/og";
+import { themeConfig } from "@/theme.config";
 
 export const runtime = "edge";
-export const alt = "AOURA — Suplementos Deportivos & Nutricionista IA";
+export const alt = `${themeConfig.brand.name} — ${themeConfig.brand.tagline}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -71,7 +72,7 @@ export default async function Image() {
           </svg>
         </div>
 
-        {/* Nombre AOURA */}
+        {/* Nombre de marca */}
         <div
           style={{
             fontSize: "72px",
@@ -82,7 +83,7 @@ export default async function Image() {
             display: "flex",
           }}
         >
-          AOURA
+          {themeConfig.brand.name}
         </div>
 
         {/* Tagline */}
@@ -95,7 +96,7 @@ export default async function Image() {
             display: "flex",
           }}
         >
-          Tu centro. Tu salud. Tu evolucion.
+          {themeConfig.brand.tagline}
         </div>
 
         {/* Pills de features */}
@@ -105,7 +106,7 @@ export default async function Image() {
             gap: "16px",
           }}
         >
-          {["Suplementos", "Fitness Tracker", "Nutricionista IA"].map(
+          {["Productos", "Ofertas", "Envio a todo el pais"].map(
             (label) => (
               <div
                 key={label}
@@ -138,7 +139,7 @@ export default async function Image() {
             fontSize: "16px",
           }}
         >
-          aoura-salud.vercel.app
+          {themeConfig.brand.url.replace(/^https?:\/\//, "")}
         </div>
       </div>
     ),

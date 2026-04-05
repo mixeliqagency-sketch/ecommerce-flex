@@ -1,7 +1,7 @@
 {
-  "name": "AOURA — Suplementos Deportivos & Nutricionista IA",
-  "short_name": "AOURA",
-  "description": "Compra suplementos deportivos, registra tus entrenamientos de gym y cardio, y consulta con NIA, tu nutricionista con inteligencia artificial. Todo gratis.",
+  "name": "MiTienda — Tu tienda online",
+  "short_name": "MiTienda",
+  "description": "Compra los mejores productos online con envio a todo el pais.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
@@ -11,13 +11,13 @@
   "orientation": "portrait",
   "lang": "es-AR",
   "dir": "ltr",
-  "categories": ["health", "fitness", "shopping", "sports"],
+  "categories": ["shopping"],
   "screenshots": [
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "label": "AOURA — Pantalla principal"
+      "label": "Pantalla principal"
     }
   ],
   "icons": [

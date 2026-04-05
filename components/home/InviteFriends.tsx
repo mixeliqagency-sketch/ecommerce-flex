@@ -1,6 +1,7 @@
 "use client";
 
 import ShareButton from "@/components/shared/ShareButton";
+import { themeConfig } from "@/theme.config";
 
 // CTA para que el usuario comparta la app con amigos — marketing organico gratis
 export default function InviteFriends() {
@@ -22,12 +23,12 @@ export default function InviteFriends() {
             Invita a un amigo
           </h2>
           <p className="text-text-secondary text-sm max-w-md mx-auto mb-6">
-            Compartile AOURA a alguien que quiera mejorar su salud. Suplementos, fitness tracker, nutricionista IA y mas. Todo gratis.
+            Compartile {themeConfig.brand.name} a alguien que busque los mejores productos online. Ofertas, calidad y envio rapido. Todo en un solo lugar.
           </p>
           <div className="max-w-xs mx-auto">
             <ShareButton
-              title="AOURA — Tu centro de salud y bienestar"
-              text="Te recomiendo AOURA: suplementos, fitness tracker, nutricionista IA y contenido de salud. Todo en un solo lugar."
+              title={`${themeConfig.brand.name} — ${themeConfig.brand.tagline}`}
+              text={`Te recomiendo ${themeConfig.brand.name}: los mejores productos online con ofertas, calidad y atencion personalizada. Todo en un solo lugar.`}
               variant="full"
             />
           </div>

@@ -331,7 +331,7 @@ export async function createReview(review: Omit<Review, "id" | "fecha">): Promis
   });
 }
 
-// === SYNC: PERFILES (datos de NIA → Sheets) ===
+// === SYNC: PERFILES (datos de usuario → Sheets) ===
 
 export async function syncUserProfile(profile: {
   email: string;
@@ -537,7 +537,7 @@ export async function syncAcquisitionSource(data: {
   });
 }
 
-// --- PEDIDOS POR EMAIL (para NIA) ---
+// --- PEDIDOS POR EMAIL (para el asistente) ---
 
 export async function getOrdersByEmail(email: string): Promise<{
   fecha: string;

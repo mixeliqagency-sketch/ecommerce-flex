@@ -48,7 +48,7 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 md:hidden" aria-label="Navegacion principal">
-      <div className="bg-bg-secondary" style={{ borderTop: "1px solid #C9A96E", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <div className="bg-bg-secondary" style={{ borderTop: "1px solid var(--border-decorative)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         <div className="flex items-end h-14 pb-1">
           {TABS.map((tab) => {
             const active = isActive(tab.href);
