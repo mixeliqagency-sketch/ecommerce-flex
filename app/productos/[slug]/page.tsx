@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { formatPrice, calcDiscount } from "@/lib/utils";
+import { formatPrice, calcDiscount, getBadgeClasses } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useReviews } from "@/context/ReviewsContext";
 import StarRating from "@/components/reviews/StarRating";
@@ -108,13 +108,7 @@ export default function ProductoDetallePage() {
           {/* Badge */}
           {product.badge && (
             <span
-              className={`absolute top-3 left-3 text-xs font-bold uppercase px-3 py-1 rounded-full ${
-                product.badge === "oferta"
-                  ? "bg-accent-red text-white"
-                  : product.badge === "nuevo"
-                  ? "bg-accent-emerald text-black"
-                  : "bg-accent-yellow text-black"
-              }`}
+              className={`absolute top-3 left-3 text-xs font-bold uppercase px-3 py-1 rounded-full ${getBadgeClasses(product.badge)}`}
             >
               {product.badge}
             </span>

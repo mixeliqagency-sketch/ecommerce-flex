@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import CartSummary from "@/components/cart/CartSummary";
 import Link from "next/link";
-import { formatPrice, FREE_SHIPPING_THRESHOLD } from "@/lib/utils";
+import { formatPrice, FREE_SHIPPING_THRESHOLD, FLAT_SHIPPING_COST, calcSubtotal, copyToClipboard, buildWhatsAppLink } from "@/lib/utils";
 
 // Datos de transferencia bancaria (vienen del .env, con fallbacks)
 const TRANSFER_CBU = process.env.NEXT_PUBLIC_TRANSFER_CBU ?? "";
@@ -80,8 +80,8 @@ export default function CheckoutPage() {
   }, [payMethod, usdtRate]);
 
   // Calcular totales (mismo calculo que CartSummary)
-  const subtotal = items.reduce((sum, i) => sum + i.product.precio * i.cantidad, 0);
-  const envio = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 5000;
+  const subtotal = calcSubtotal(items);
+  const envio = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_COST;
   const total = subtotal + envio;
 
   // Calcular precio con descuento de transferencia
@@ -92,30 +92,19 @@ export default function CheckoutPage() {
   const usdtAmount = usdtRate ? (total / usdtRate).toFixed(2) : null;
 
   // Copiar texto al portapapeles con toast de confirmacion
-  const copyToClipboard = async (text: string, field: "cbu" | "alias" | "wallet") => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      // Fallback para navegadores sin clipboard API
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-    }
+  const handleCopy = async (text: string, field: "cbu" | "alias" | "wallet") => {
+    await copyToClipboard(text);
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
   };
 
   // Armar mensaje de WhatsApp pre-completado para enviar comprobante
   const buildWhatsAppURL = (orderId: string, monto: number) => {
-    const msg = encodeURIComponent(
+    const msg =
       `Hola! Realice una transferencia bancaria por ${formatPrice(monto)}.\n` +
       `Numero de pedido: ${orderId}\n` +
-      `Adjunto el comprobante.`
-    );
-    return `https://wa.me/${WA_PHONE}?text=${msg}`;
+      `Adjunto el comprobante.`;
+    return buildWhatsAppLink(WA_PHONE, msg);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -125,81 +114,6 @@ export default function CheckoutPage() {
     // Los productos actuales son de prueba (datos de MercadoLibre)
     // No se debe procesar ninguna compra real
     setError("La tienda esta en modo demostracion. Los pagos se habilitaran cuando tengamos productos propios.");
-    return;
-
-    setError("");
-    setLoading(true);
-
-    try {
-      if (payMethod === "transferencia") {
-        // Flujo transferencia: guardar pedido con descuento como pendiente
-        const res = await fetch("/api/checkout/transferencia", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items, ...form }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          setError(data.error || "Error al registrar el pedido");
-          return;
-        }
-
-        clearCart();
-        setTransferenciaResult({
-          order_id: data.order_id,
-          total_original: data.total_original,
-          descuento_monto: data.descuento_monto,
-          total_con_descuento: data.total_con_descuento,
-        });
-
-      } else if (payMethod === "mercadopago") {
-        // Flujo MercadoPago existente sin cambios
-        const res = await fetch("/api/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items, ...form }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          setError(data.error || "Error al procesar el pago");
-          return;
-        }
-
-        const payUrl = data.sandbox_init_point || data.init_point;
-        if (payUrl) {
-          clearCart();
-          window.location.href = payUrl;
-        } else {
-          setError("No se pudo generar el link de pago");
-        }
-
-      } else {
-        // Flujo crypto: guardar pedido como pendiente
-        const res = await fetch("/api/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items, ...form, metodo_pago: "crypto" }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          setError(data.error || "Error al registrar el pedido");
-          return;
-        }
-
-        clearCart();
-        setCryptoSent(true);
-      }
-    } catch {
-      setError("Error de conexion. Intenta de nuevo.");
-    } finally {
-      setLoading(false);
-    }
   };
 
   // ============================================================
@@ -245,7 +159,7 @@ export default function CheckoutPage() {
               </code>
               <button
                 type="button"
-                onClick={() => copyToClipboard(TRANSFER_CBU, "cbu")}
+                onClick={() => handleCopy(TRANSFER_CBU, "cbu")}
                 className={`flex-shrink-0 px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
                   copiedField === "cbu"
                     ? "bg-accent-emerald/20 text-accent-emerald"
@@ -266,7 +180,7 @@ export default function CheckoutPage() {
               </code>
               <button
                 type="button"
-                onClick={() => copyToClipboard(TRANSFER_ALIAS, "alias")}
+                onClick={() => handleCopy(TRANSFER_ALIAS, "alias")}
                 className={`flex-shrink-0 px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
                   copiedField === "alias"
                     ? "bg-accent-emerald/20 text-accent-emerald"
@@ -505,7 +419,7 @@ export default function CheckoutPage() {
                       </code>
                       <button
                         type="button"
-                        onClick={() => copyToClipboard(TRANSFER_CBU, "cbu")}
+                        onClick={() => handleCopy(TRANSFER_CBU, "cbu")}
                         className={`flex-shrink-0 px-2.5 py-1.5 rounded text-[11px] font-semibold transition-colors border border-blue-500/30 text-blue-400 ${
                           copiedField === "cbu" ? "bg-blue-500/20" : "bg-blue-500/10 hover:bg-blue-500/20"
                         }`}
@@ -523,7 +437,7 @@ export default function CheckoutPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => copyToClipboard(TRANSFER_ALIAS, "alias")}
+                      onClick={() => handleCopy(TRANSFER_ALIAS, "alias")}
                       className={`flex-shrink-0 px-2.5 py-1.5 rounded text-[11px] font-semibold transition-colors border border-blue-500/30 text-blue-400 ${
                         copiedField === "alias" ? "bg-blue-500/20" : "bg-blue-500/10 hover:bg-blue-500/20"
                       }`}
@@ -763,7 +677,7 @@ export default function CheckoutPage() {
                       </code>
                       <button
                         type="button"
-                        onClick={() => copyToClipboard(USDT_WALLET, "wallet")}
+                        onClick={() => handleCopy(USDT_WALLET, "wallet")}
                         className={`flex-shrink-0 px-3 py-1.5 rounded text-xs font-semibold transition-colors border border-yellow-500/30 text-yellow-400 ${
                           copiedField === "wallet" ? "bg-yellow-500/20" : "bg-yellow-500/10 hover:bg-yellow-500/20"
                         }`}

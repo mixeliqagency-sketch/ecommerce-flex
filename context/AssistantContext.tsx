@@ -79,10 +79,11 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Usa messagesRef internamente, no necesita messages como dependencia
   const sendMessage = useCallback(async (text: string) => {
     await sendMessageInternal(text);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages]);
+  }, []);
 
   return (
     <AssistantContext.Provider value={{ isOpen, messages, loading, openAssistant, closeAssistant, toggleAssistant, sendMessage }}>

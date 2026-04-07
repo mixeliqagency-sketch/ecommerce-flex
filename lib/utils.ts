@@ -1,14 +1,10 @@
-interface Category {
-  slug: string;
-  nombre: string;
-  icono: string;
-}
+import { themeConfig } from "@/theme.config";
 
-// Formatear precio argentino: $28.000
+// Formatear precio segun la moneda configurada en theme.config.ts
 export function formatPrice(price: number): string {
-  return new Intl.NumberFormat("es-AR", {
+  return new Intl.NumberFormat(themeConfig.currency.locale, {
     style: "currency",
-    currency: "ARS",
+    currency: themeConfig.currency.code,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(price);
@@ -29,22 +25,43 @@ export function calcInstallments(precio: number): { cantidad: number; monto: num
   return null;
 }
 
-// Categorias con iconos (los SVG se renderizan en los componentes)
-export const CATEGORIES: Category[] = [
-  { slug: "todos", nombre: "Todos", icono: "grid" },
-  { slug: "proteinas", nombre: "Proteinas", icono: "protein" },
-  { slug: "creatina", nombre: "Creatina", icono: "lightning" },
-  { slug: "adaptogenos", nombre: "Adaptogenos", icono: "leaf" },
-  { slug: "colageno", nombre: "Colageno", icono: "drop" },
-  { slug: "superfoods", nombre: "Superfoods", icono: "seed" },
-  { slug: "ofertas", nombre: "Ofertas", icono: "tag" },
-  { slug: "accesorios", nombre: "Accesorios", icono: "bag" },
-];
+// Calcular subtotal del carrito (evita repetir la formula en multiples archivos)
+export function calcSubtotal(items: Array<{ product: { precio: number }; cantidad: number }>): number {
+  return items.reduce((sum, i) => sum + i.product.precio * i.cantidad, 0);
+}
 
-// Envio gratis a partir de este monto
-export const FREE_SHIPPING_THRESHOLD = 50000;
+// Clases CSS para badges de producto (oferta, nuevo, hot, etc.)
+export function getBadgeClasses(badge: string): string {
+  if (badge === "oferta") return "bg-accent-red text-white";
+  if (badge === "nuevo") return "bg-accent-emerald text-black";
+  return "bg-accent-yellow text-black";
+}
+
+// Envio gratis a partir de este monto (centralizado desde theme.config.ts)
+export const FREE_SHIPPING_THRESHOLD = themeConfig.currency.envioGratis;
+
+// Costo fijo de envio cuando no se alcanza el minimo para envio gratis
+export const FLAT_SHIPPING_COST = 5000;
 
 // Armar link de WhatsApp con mensaje pre-cargado
 export function buildWhatsAppLink(phone: string, message: string): string {
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+}
+
+// Copiar texto al portapapeles (con fallback para navegadores sin clipboard API)
+export async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  }
 }

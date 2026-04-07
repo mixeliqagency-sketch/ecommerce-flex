@@ -1,9 +1,7 @@
 "use client";
 
-import { formatPrice, FREE_SHIPPING_THRESHOLD } from "@/lib/utils";
+import { formatPrice, FREE_SHIPPING_THRESHOLD, FLAT_SHIPPING_COST, calcSubtotal } from "@/lib/utils";
 import type { CartItem } from "@/types";
-
-const FLAT_SHIPPING = 5000;
 
 interface CartSummaryProps {
   items: CartItem[];
@@ -12,12 +10,9 @@ interface CartSummaryProps {
 }
 
 export default function CartSummary({ items, descuento = 0, labelDescuento }: CartSummaryProps) {
-  const subtotal = items.reduce(
-    (sum, i) => sum + i.product.precio * i.cantidad,
-    0
-  );
+  const subtotal = calcSubtotal(items);
   const envioGratis = subtotal >= FREE_SHIPPING_THRESHOLD;
-  const envio = envioGratis ? 0 : FLAT_SHIPPING;
+  const envio = envioGratis ? 0 : FLAT_SHIPPING_COST;
   const total = subtotal - descuento + envio;
 
   return (

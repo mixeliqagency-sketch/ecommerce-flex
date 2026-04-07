@@ -5,25 +5,48 @@ if (!process.env.GOOGLE_SHEETS_ID) {
   console.error("GOOGLE_SHEETS_ID no configurado");
 }
 
-// Autenticacion con Service Account
-function getAuth() {
-  return new google.auth.GoogleAuth({
-    credentials: {
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    },
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
+// --- Singleton de autenticacion (evita crear instancias en cada llamada) ---
+let _auth: any = null;
+let _sheets: any = null;
+
+export function getAuth() {
+  if (!_auth) {
+    _auth = new google.auth.GoogleAuth({
+      credentials: {
+        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+      },
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    });
+  }
+  return _auth;
 }
 
-function getSheets() {
-  return google.sheets({ version: "v4", auth: getAuth() });
+export function getSheets() {
+  if (!_sheets) {
+    _sheets = google.sheets({ version: "v4", auth: getAuth() });
+  }
+  return _sheets;
 }
 
-const SHEET_ID = process.env.GOOGLE_SHEETS_ID!;
+// --- Cache en memoria con TTL de 60 segundos ---
+interface CacheEntry<T> {
+  data: T;
+  expiry: number;
+}
+const CACHE_TTL = 60_000;
+let productsCache: CacheEntry<Product[]> | null = null;
+let reviewsCache: CacheEntry<any[][]> | null = null;
 
-// --- LEER PRODUCTOS ---
+export const SHEET_ID = process.env.GOOGLE_SHEETS_ID!;
+
+// --- LEER PRODUCTOS (con cache TTL 60s) ---
 export async function getProducts(): Promise<Product[]> {
+  // Devolver cache si es valido
+  if (productsCache && Date.now() < productsCache.expiry) {
+    return productsCache.data;
+  }
+
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
@@ -33,7 +56,7 @@ export async function getProducts(): Promise<Product[]> {
   const rows = res.data.values;
   if (!rows || rows.length === 0) return [];
 
-  return rows.map((row) => ({
+  const products = rows.map((row: any[]) => ({
     id: row[0] || "",
     slug: row[1] || "",
     nombre: row[2] || "",
@@ -54,6 +77,10 @@ export async function getProducts(): Promise<Product[]> {
     mejor_momento: row[17] || undefined,
     beneficios: row[18] || undefined,
   }));
+
+  // Guardar en cache
+  productsCache = { data: products, expiry: Date.now() + CACHE_TTL };
+  return products;
 }
 
 // Buscar un producto por slug
@@ -119,7 +146,7 @@ export async function getOrderById(orderId: string): Promise<{
   });
   const rows = res.data.values;
   if (!rows) return null;
-  const row = rows.find((r) => r[0] === orderId);
+  const row = rows.find((r: any[]) => r[0] === orderId);
   if (!row) return null;
   return {
     id: row[0],
@@ -182,7 +209,7 @@ export async function getUserByEmail(
   });
   const rows = res.data.values;
   if (!rows) return null;
-  const row = rows.find((r) => r[1] === email);
+  const row = rows.find((r: any[]) => r[1] === email);
   if (!row) return null;
   return {
     id: row[0],
@@ -195,83 +222,76 @@ export async function getUserByEmail(
 
 // --- RESENAS ---
 
-// Leer todas las resenas (aprobadas) de un producto
-export async function getReviewsByProduct(productSlug: string): Promise<Review[]> {
+// Helper privado: mapea una fila de la hoja a un objeto Review
+function mapRowToReview(row: any[], overrides?: Partial<Review>): Review {
+  const review: Review = {
+    id: row[0] || "",
+    product_slug: row[1] || "",
+    nombre: row[2] || "",
+    email: row[3] || "",
+    calificacion: (Number(row[4]) || 5) as Review["calificacion"],
+    titulo: row[5] || "",
+    contenido: row[6] || "",
+    fecha: row[7] || "",
+    aprobado: (row[8] || "pendiente") as Review["aprobado"],
+    verificado: row[9] === "true",
+    destacada: row[10] === "true",
+  };
+  // Aplicar overrides si se pasan (ej: destacada forzada a true)
+  if (overrides) Object.assign(review, overrides);
+  return review;
+}
+
+// Helper privado: lee la hoja Resenas con cache TTL 60s
+async function getRawReviews(): Promise<any[][]> {
+  if (reviewsCache && Date.now() < reviewsCache.expiry) {
+    return reviewsCache.data;
+  }
   const sheets = getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: "Resenas!A2:K",
   });
-  const rows = res.data.values;
-  if (!rows) return [];
+  const rows = res.data.values || [];
+  reviewsCache = { data: rows, expiry: Date.now() + CACHE_TTL };
+  return rows;
+}
 
+// Leer todas las resenas (aprobadas) de un producto
+export async function getReviewsByProduct(productSlug: string): Promise<Review[]> {
+  const rows = await getRawReviews();
   return rows
     .filter((row) => row[1] === productSlug && row[8] === "si")
-    .map((row) => ({
-      id: row[0] || "",
-      product_slug: row[1] || "",
-      nombre: row[2] || "",
-      email: row[3] || "",
-      calificacion: (Number(row[4]) || 5) as Review["calificacion"],
-      titulo: row[5] || "",
-      contenido: row[6] || "",
-      fecha: row[7] || "",
-      aprobado: (row[8] || "pendiente") as Review["aprobado"],
-      verificado: row[9] === "true",
-      destacada: row[10] === "true",
-    }));
+    .map((row) => mapRowToReview(row));
 }
 
 // Leer resenas destacadas para el carrusel de la home
 export async function getFeaturedReviews(): Promise<Review[]> {
-  const sheets = getSheets();
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range: "Resenas!A2:K",
-  });
-  const rows = res.data.values;
-  if (!rows) return [];
-
+  const rows = await getRawReviews();
   return rows
     .filter((row) => row[8] === "si" && row[10] === "true")
-    .map((row) => ({
-      id: row[0] || "",
-      product_slug: row[1] || "",
-      nombre: row[2] || "",
-      email: row[3] || "",
-      calificacion: (Number(row[4]) || 5) as Review["calificacion"],
-      titulo: row[5] || "",
-      contenido: row[6] || "",
-      fecha: row[7] || "",
-      aprobado: (row[8] || "si") as Review["aprobado"],
-      verificado: row[9] === "true",
-      destacada: true,
-    }));
+    .map((row) => mapRowToReview(row, { destacada: true, aprobado: "si" }));
 }
 
 // Obtener resumen de calificaciones (promedio + distribucion)
-export async function getReviewSummary(productSlug: string): Promise<ReviewSummary> {
-  const reviews = await getReviewsByProduct(productSlug);
+// Acepta reviews pre-obtenidas para evitar lecturas duplicadas en Promise.all
+export async function getReviewSummary(productSlug: string, reviews?: Review[]): Promise<ReviewSummary> {
+  const data = reviews ?? await getReviewsByProduct(productSlug);
   const distribucion: Record<1 | 2 | 3 | 4 | 5, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-  for (const r of reviews) {
+  for (const r of data) {
     distribucion[r.calificacion]++;
   }
-  const total = reviews.length;
+  const total = data.length;
   const promedio = total > 0
-    ? reviews.reduce((sum, r) => sum + r.calificacion, 0) / total
+    ? data.reduce((sum, r) => sum + r.calificacion, 0) / total
     : 0;
   return { promedio: Math.round(promedio * 10) / 10, total, distribucion };
 }
 
 // Obtener resumenes de todos los productos (para el listado)
 export async function getAllReviewSummaries(): Promise<Record<string, ReviewSummary>> {
-  const sheets = getSheets();
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range: "Resenas!A2:K",
-  });
-  const rows = res.data.values;
-  if (!rows) return {};
+  const rows = await getRawReviews();
+  if (rows.length === 0) return {};
 
   const byProduct: Record<string, number[]> = {};
   for (const row of rows) {
@@ -355,7 +375,7 @@ export async function syncUserProfile(profile: {
     range: "Perfiles!A2:M",
   });
   const rows = res.data.values;
-  const existingIndex = rows?.findIndex((r) => r[0] === profile.email);
+  const existingIndex = rows?.findIndex((r: any[]) => r[0] === profile.email);
 
   const rowData = [
     profile.email,
@@ -553,8 +573,8 @@ export async function getOrdersByEmail(email: string): Promise<{
   const rows = res.data.values;
   if (!rows) return [];
   return rows
-    .filter((r) => r[2] === email)
-    .map((r) => ({
+    .filter((r: any[]) => r[2] === email)
+    .map((r: any[]) => ({
       fecha: r[1] || "",
       items: r[6] || "",
       total: Number(r[9]) || 0,
@@ -606,8 +626,8 @@ export async function getWebAuthnCredentials(email: string): Promise<{
   const rows = res.data.values;
   if (!rows) return [];
   return rows
-    .filter((r) => r[0] === email)
-    .map((r) => ({
+    .filter((r: any[]) => r[0] === email)
+    .map((r: any[]) => ({
       credential_id: r[1] || "",
       public_key: r[2] || "",
       counter: Number(r[3]) || 0,
@@ -624,7 +644,7 @@ export async function updateWebAuthnCounter(credentialId: string, newCounter: nu
   });
   const rows = res.data.values;
   if (!rows) return;
-  const idx = rows.findIndex((r) => r[1] === credentialId);
+  const idx = rows.findIndex((r: any[]) => r[1] === credentialId);
   if (idx < 0) return;
   await sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
@@ -649,7 +669,7 @@ export async function isVerifiedBuyer(email: string, productSlug: string): Promi
   const product = products.find((p) => p.slug === productSlug);
   if (!product) return false;
 
-  return rows.some((row) => {
+  return rows.some((row: any[]) => {
     const orderEmail = row[2];
     const items = row[6] || "";
     const estado = row[11] || "";

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
-import { getProducts } from "@/lib/google-sheets";
+import { getProducts, getAuth, SHEET_ID } from "@/lib/google-sheets";
 
 // GET /api/resenas/seed — Crea la hoja "Resenas" y carga resenas iniciales
 // EJECUTAR UNA SOLA VEZ
@@ -15,16 +15,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-      },
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-    });
-
-    const sheets = google.sheets({ version: "v4", auth });
-    const SHEET_ID = process.env.GOOGLE_SHEETS_ID!;
+    const sheets = google.sheets({ version: "v4", auth: getAuth() });
 
     // 1. Intentar crear la hoja "Resenas"
     try {

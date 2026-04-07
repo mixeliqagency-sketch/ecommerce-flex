@@ -7,6 +7,7 @@ import {
   useEffect,
   useCallback,
   useRef,
+  useMemo,
 } from "react";
 import type { Product, CartItem } from "@/types";
 import { trackAddToCart, trackRemoveFromCart } from "@/lib/analytics";
@@ -133,11 +134,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setIsOpen(false);
   }, []);
 
-  const totalItems = items.reduce((sum, i) => sum + i.cantidad, 0);
-  const subtotal = items.reduce(
-    (sum, i) => sum + i.product.precio * i.cantidad,
-    0
-  );
+  // Memoizar para evitar recalcular en cada render si items no cambio
+  const totalItems = useMemo(() => items.reduce((sum, i) => sum + i.cantidad, 0), [items]);
+  const subtotal = useMemo(() => items.reduce((sum, i) => sum + i.product.precio * i.cantidad, 0), [items]);
 
   return (
     <CartContext.Provider

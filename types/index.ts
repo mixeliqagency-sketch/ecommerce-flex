@@ -1,3 +1,10 @@
+// === PWA ===
+// Interfaz para el evento beforeinstallprompt (no esta en los tipos nativos de TS)
+export interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 // === PRODUCTOS ===
 export interface Product {
   id: string;
@@ -16,6 +23,9 @@ export interface Product {
   tipo: string;
   link_afiliado?: string;
   variantes?: string[];
+  dosis_recomendada?: string;
+  mejor_momento?: string;
+  beneficios?: string;
 }
 
 // === RESENAS ===

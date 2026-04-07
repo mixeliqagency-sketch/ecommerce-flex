@@ -5,12 +5,7 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { themeConfig } from "@/theme.config";
-
-// Interfaz para el evento de instalacion PWA
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
+import type { BeforeInstallPromptEvent } from "@/types";
 
 export default function LoginPage() {
   const router = useRouter();

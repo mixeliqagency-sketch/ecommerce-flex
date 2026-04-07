@@ -1,68 +1,25 @@
 import { NextResponse } from "next/server";
 import { createPreference } from "@/lib/mercadopago";
-import { createOrder, getProducts } from "@/lib/google-sheets";
-import { isValidEmail, generateOrderId } from "@/lib/validation";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import type { CartItem } from "@/types";
-
-interface CheckoutBody {
-  items: CartItem[];
-  nombre: string;
-  apellido: string;
-  email: string;
-  telefono: string;
-  direccion: string;
-  ciudad: string;
-  codigo_postal: string;
-}
+import { createOrder } from "@/lib/google-sheets";
+import { generateOrderId } from "@/lib/validation";
+import { validateCheckout } from "@/lib/checkout-validation";
+import { FREE_SHIPPING_THRESHOLD, FLAT_SHIPPING_COST } from "@/lib/utils";
 
 export async function POST(request: Request) {
   try {
-    // Rate limiting — maximo 30 requests por minuto por IP
-    const rateCheck = checkRateLimit(request, "checkout", RATE_LIMITS.general);
-    if (!rateCheck.allowed) {
-      return NextResponse.json({ error: "Demasiados intentos. Espera un momento." }, { status: 429 });
-    }
+    // Validar datos del checkout (rate limit, campos, precios contra DB)
+    const result = await validateCheckout(request, "checkout");
+    if (!result.ok) return result.error;
 
-    const body: CheckoutBody = await request.json();
-    const { items, nombre, apellido, email, telefono, direccion, ciudad, codigo_postal } = body;
-
-    // Validaciones basicas
-    if (!items?.length) {
-      return NextResponse.json({ error: "Carrito vacio" }, { status: 400 });
-    }
-    if (!email || !nombre || !apellido) {
-      return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
-    }
-
-    // Validar formato de email
-    if (!isValidEmail(email)) {
-      return NextResponse.json({ error: "Email invalido" }, { status: 400 });
-    }
-
-    // Validar largo razonable de campos de texto (previene payloads abusivos)
-    if (nombre.length > 200 || apellido.length > 200 || email.length > 254) {
-      return NextResponse.json({ error: "Datos demasiado largos" }, { status: 400 });
-    }
-
-    // Validar precios contra la base de datos
-    const dbProducts = await getProducts();
-    for (const item of items) {
-      const dbProduct = dbProducts.find((p: any) => p.slug === item.product.slug);
-      if (!dbProduct) {
-        return NextResponse.json({ error: `Producto no encontrado: ${item.product.nombre}` }, { status: 400 });
-      }
-      // Usar el precio real de la base de datos, no el del cliente
-      item.product.precio = dbProduct.precio;
-    }
+    const { items, nombre, apellido, email, telefono, direccion, ciudad, codigo_postal } = result.body;
 
     // Calcular totales
     const subtotal = items.reduce(
       (sum, i) => sum + i.product.precio * i.cantidad,
       0
     );
-    const envioGratis = subtotal >= 50000;
-    const envio = envioGratis ? 0 : 5000;
+    const envioGratis = subtotal >= FREE_SHIPPING_THRESHOLD;
+    const envio = envioGratis ? 0 : FLAT_SHIPPING_COST;
     const total = subtotal + envio;
 
     // Generar ID de orden (criptograficamente seguro)

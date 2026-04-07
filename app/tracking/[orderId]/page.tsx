@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, calcDiscount } from "@/lib/utils";
 import { useAssistant } from "@/context/AssistantContext";
 import { themeConfig } from "@/theme.config";
 import type { Product } from "@/types";
@@ -452,7 +452,7 @@ export default function TrackingPage() {
                       )}
                       {product.precio_anterior && product.precio_anterior > product.precio && (
                         <span className="absolute top-1 right-1 text-[8px] font-bold bg-accent-red text-white px-1.5 py-0.5 rounded-full">
-                          -{Math.round(((product.precio_anterior - product.precio) / product.precio_anterior) * 100)}%
+                          -{calcDiscount(product.precio_anterior!, product.precio)}%
                         </span>
                       )}
                     </div>

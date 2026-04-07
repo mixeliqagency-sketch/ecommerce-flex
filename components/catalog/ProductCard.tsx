@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { formatPrice, calcDiscount, calcInstallments } from "@/lib/utils";
+import { formatPrice, calcDiscount, calcInstallments, getBadgeClasses } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useReviews } from "@/context/ReviewsContext";
 import StarRating from "@/components/reviews/StarRating";
@@ -59,13 +59,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Badge */}
         {product.badge && (
           <span
-            className={`absolute top-2 left-2 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-              product.badge === "oferta"
-                ? "bg-accent-red text-white"
-                : product.badge === "nuevo"
-                ? "bg-accent-emerald text-black"
-                : "bg-accent-yellow text-black"
-            }`}
+            className={`absolute top-2 left-2 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${getBadgeClasses(product.badge)}`}
           >
             {product.badge}
           </span>

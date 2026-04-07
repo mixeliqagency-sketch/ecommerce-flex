@@ -6,7 +6,7 @@ import { themeConfig } from "@/theme.config";
 import { getThemeCSS } from "@/lib/theme-css";
 import "./globals.css";
 
-// Cargar fuentes populares — solo se descarga la que se usa en theme.config
+// Next.js requiere que los font loaders se llamen como const a nivel de modulo
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-Space-Grotesk", weight: ["400", "500", "600", "700"] });
 const inter = Inter({ subsets: ["latin"], variable: "--font-Inter", weight: ["400", "500", "600", "700"] });
 const poppins = Poppins({ subsets: ["latin"], variable: "--font-Poppins", weight: ["400", "500", "600", "700"] });
@@ -16,13 +16,20 @@ const openSans = Open_Sans({ subsets: ["latin"], variable: "--font-Open-Sans", w
 const roboto = Roboto({ subsets: ["latin"], variable: "--font-Roboto", weight: ["400", "500", "700"] });
 const lato = Lato({ subsets: ["latin"], variable: "--font-Lato", weight: ["400", "700"] });
 
-const ALL_FONTS = [spaceGrotesk, inter, poppins, montserrat, playfairDisplay, openSans, roboto, lato];
+// Mapeo nombre → instancia para seleccionar solo las configuradas en theme.config
+const ALL_FONTS: Record<string, { variable: string }> = {
+  "Space Grotesk": spaceGrotesk, "Inter": inter, "Poppins": poppins,
+  "Montserrat": montserrat, "Playfair Display": playfairDisplay,
+  "Open Sans": openSans, "Roboto": roboto, "Lato": lato,
+};
 
-// Mapeo de fuentes configuradas
+// Solo aplicar las CSS variables de las fuentes configuradas (heading y body)
+const headingFont = ALL_FONTS[themeConfig.styles.fonts.heading];
+const bodyFont = ALL_FONTS[themeConfig.styles.fonts.body];
 const headingFontVar = `--font-${themeConfig.styles.fonts.heading.replace(/ /g, "-")}`;
 const bodyFontVar = `--font-${themeConfig.styles.fonts.body.replace(/ /g, "-")}`;
 
-const fontClasses = ALL_FONTS.map(f => f.variable).join(" ");
+const fontClasses = [headingFont?.variable, bodyFont?.variable].filter(Boolean).join(" ");
 
 const { brand, seo } = themeConfig;
 

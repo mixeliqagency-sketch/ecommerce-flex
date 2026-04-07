@@ -1,16 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { themeConfig } from "@/theme.config";
-
-// Interfaz para el evento beforeinstallprompt (no esta en los tipos de TS)
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
+import type { BeforeInstallPromptEvent } from "@/types";
 
 export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
   const [show, setShow] = useState(false);
   const [isManual, setIsManual] = useState(false);
 
@@ -34,6 +30,7 @@ export default function InstallPrompt() {
     // Capturar el evento de instalacion del browser
     const handler = (e: Event) => {
       e.preventDefault();
+      deferredPromptRef.current = e as BeforeInstallPromptEvent;
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShow(true);
     };
@@ -41,8 +38,9 @@ export default function InstallPrompt() {
     window.addEventListener("beforeinstallprompt", handler);
 
     // Fallback: si en 3s no se dispara el evento, mostrar instrucciones manuales
+    // Usa ref para evitar stale closure (el estado no se actualiza dentro del useEffect)
     const fallbackTimer = setTimeout(() => {
-      if (!deferredPrompt) {
+      if (!deferredPromptRef.current) {
         setIsManual(true);
         setShow(true);
       }
@@ -52,6 +50,7 @@ export default function InstallPrompt() {
       window.removeEventListener("beforeinstallprompt", handler);
       clearTimeout(fallbackTimer);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleInstall = async () => {

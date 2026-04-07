@@ -4,7 +4,7 @@ import { useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, calcDiscount } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import type { Product } from "@/types";
 
@@ -127,7 +127,7 @@ export default function PopularCarousel({ products }: PopularCarouselProps) {
               {/* Badge descuento */}
               {product.precio_anterior && product.precio_anterior > product.precio && (
                 <span className="absolute top-1.5 right-1.5 text-[9px] font-bold bg-accent-red text-white px-1.5 py-0.5 rounded-full">
-                  -{Math.round(((product.precio_anterior - product.precio) / product.precio_anterior) * 100)}%
+                  -{calcDiscount(product.precio_anterior!, product.precio)}%
                 </span>
               )}
             </div>

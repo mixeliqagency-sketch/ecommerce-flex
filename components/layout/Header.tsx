@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/context/CartContext";
+import { formatPrice } from "@/lib/utils";
 import { themeConfig } from "@/theme.config";
 
 const NAV_LINKS = [
@@ -233,7 +234,7 @@ export default function Header() {
                         <p className="text-xs text-text-muted">{producto.categoria}</p>
                       </div>
                       <span className="text-sm font-bold text-accent-emerald flex-shrink-0">
-                        ${producto.precio?.toLocaleString("es-AR")}
+                        {formatPrice(producto.precio)}
                       </span>
                     </Link>
                   ))}

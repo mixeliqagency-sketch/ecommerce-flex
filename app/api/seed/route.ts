@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
+import { getAuth, SHEET_ID } from "@/lib/google-sheets";
 
 // Productos basados en publicaciones reales de MercadoLibre Argentina (marzo 2026)
 // Fotos directas del CDN de MercadoLibre (http2.mlstatic.com)
@@ -259,16 +260,6 @@ const PRODUCTOS_FICTICIOS = [
   ],
 ];
 
-function getAuth() {
-  return new google.auth.GoogleAuth({
-    credentials: {
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    },
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
-}
-
 export async function GET(request: Request) {
   // Proteccion: en produccion solo se puede ejecutar con token secreto
   if (process.env.NODE_ENV === "production") {
@@ -281,7 +272,6 @@ export async function GET(request: Request) {
 
   try {
     const sheets = google.sheets({ version: "v4", auth: getAuth() });
-    const SHEET_ID = process.env.GOOGLE_SHEETS_ID!;
 
     // 1. Crear la hoja "Productos" si no existe (o limpiar datos previos)
     // Primero verificar si la hoja existe

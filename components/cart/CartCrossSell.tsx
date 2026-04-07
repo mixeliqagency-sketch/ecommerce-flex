@@ -20,6 +20,9 @@ export default function CartCrossSell() {
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Dependencia estable: solo re-fetch cuando cambian los productos (no las cantidades)
+  const itemSlugs = items.map((i) => i.product.slug).sort().join(",");
+
   useEffect(() => {
     if (items.length === 0) {
       setSuggestions([]);
@@ -83,7 +86,8 @@ export default function CartCrossSell() {
       }
     }
     load();
-  }, [items]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemSlugs]);
 
   if (loading || suggestions.length === 0) return null;
 

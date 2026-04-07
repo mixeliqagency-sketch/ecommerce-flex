@@ -69,6 +69,20 @@ export default function ProductosPage() {
     return true;
   });
 
+  // Sidebar de filtros reutilizable (se renderiza en mobile y desktop)
+  const filterSidebarEl = (
+    <FilterSidebar
+      categorias={filterCats}
+      onCategoriasChange={setFilterCats}
+      marcas={filterBrands}
+      onMarcasChange={setFilterBrands}
+      precioMin={precioMin}
+      precioMax={precioMax}
+      onPrecioMinChange={setPrecioMin}
+      onPrecioMaxChange={setPrecioMax}
+    />
+  );
+
   return (
     <div className="max-w-7xl mx-auto px-3 min-[400px]:px-4 py-6 pb-24">
       {/* Titulo + controles superiores
@@ -111,16 +125,7 @@ export default function ProductosPage() {
       {/* Filtros mobile desplegables */}
       {showFilters && (
         <div className="lg:hidden mb-6 bg-bg-card border border-border-glass rounded-card p-4">
-          <FilterSidebar
-            categorias={filterCats}
-            onCategoriasChange={setFilterCats}
-            marcas={filterBrands}
-            onMarcasChange={setFilterBrands}
-            precioMin={precioMin}
-            precioMax={precioMax}
-            onPrecioMinChange={setPrecioMin}
-            onPrecioMaxChange={setPrecioMax}
-          />
+          {filterSidebarEl}
         </div>
       )}
 
@@ -129,16 +134,7 @@ export default function ProductosPage() {
         {/* Sidebar desktop */}
         <div className="hidden lg:block">
           <div className="sticky top-20">
-            <FilterSidebar
-              categorias={filterCats}
-              onCategoriasChange={setFilterCats}
-              marcas={filterBrands}
-              onMarcasChange={setFilterBrands}
-              precioMin={precioMin}
-              precioMax={precioMax}
-              onPrecioMinChange={setPrecioMin}
-              onPrecioMaxChange={setPrecioMax}
-            />
+            {filterSidebarEl}
           </div>
         </div>
 
