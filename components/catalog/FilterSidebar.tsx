@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { formatPrice } from "@/lib/utils";
+import { CheckboxGroup } from "@/components/shared/CheckboxGroup";
 
 // Categorias disponibles para checkboxes
 const FILTER_CATEGORIES = [
@@ -12,11 +13,11 @@ const FILTER_CATEGORIES = [
   { slug: "superfoods", nombre: "Superfoods" },
 ];
 
-// Marcas disponibles
+// Marcas disponibles — formato { slug, nombre } para CheckboxGroup
 const FILTER_BRANDS = [
-  "VitaForge",
-  "Star Nutrition",
-  "ENA",
+  { slug: "VitaForge", nombre: "VitaForge" },
+  { slug: "Star Nutrition", nombre: "Star Nutrition" },
+  { slug: "ENA", nombre: "ENA" },
 ];
 
 interface FilterSidebarProps {
@@ -86,37 +87,11 @@ export default function FilterSidebar({
         <h4 className="font-heading font-bold text-sm uppercase tracking-wider text-text-secondary mb-3">
           Categoria
         </h4>
-        <div className="space-y-2">
-          {FILTER_CATEGORIES.map((cat) => (
-            <label
-              key={cat.slug}
-              className="flex items-center gap-3 cursor-pointer group"
-            >
-              <input
-                type="checkbox"
-                checked={categorias.includes(cat.slug)}
-                onChange={() => toggleCategoria(cat.slug)}
-                className="sr-only peer"
-              />
-              <div
-                className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-accent-emerald/40 ${
-                  categorias.includes(cat.slug)
-                    ? "bg-accent-emerald border-accent-emerald"
-                    : "border-border-glass group-hover:border-accent-emerald/50"
-                }`}
-              >
-                {categorias.includes(cat.slug) && (
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                )}
-              </div>
-              <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">
-                {cat.nombre}
-              </span>
-            </label>
-          ))}
-        </div>
+        <CheckboxGroup
+          items={FILTER_CATEGORIES}
+          selected={categorias}
+          onToggle={toggleCategoria}
+        />
       </div>
 
       {/* Precio */}
@@ -150,37 +125,11 @@ export default function FilterSidebar({
         <h4 className="font-heading font-bold text-sm uppercase tracking-wider text-text-secondary mb-3">
           Marca
         </h4>
-        <div className="space-y-2">
-          {FILTER_BRANDS.map((brand) => (
-            <label
-              key={brand}
-              className="flex items-center gap-3 cursor-pointer group"
-            >
-              <input
-                type="checkbox"
-                checked={marcas.includes(brand)}
-                onChange={() => toggleMarca(brand)}
-                className="sr-only peer"
-              />
-              <div
-                className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-accent-emerald/40 ${
-                  marcas.includes(brand)
-                    ? "bg-accent-emerald border-accent-emerald"
-                    : "border-border-glass group-hover:border-accent-emerald/50"
-                }`}
-              >
-                {marcas.includes(brand) && (
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                )}
-              </div>
-              <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">
-                {brand}
-              </span>
-            </label>
-          ))}
-        </div>
+        <CheckboxGroup
+          items={FILTER_BRANDS}
+          selected={marcas}
+          onToggle={toggleMarca}
+        />
       </div>
     </aside>
   );

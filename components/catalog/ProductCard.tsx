@@ -34,6 +34,21 @@ export default function ProductCard({ product }: ProductCardProps) {
   const descuento = calcDiscount(product.precio_anterior || 0, product.precio);
   const cuotas = calcInstallments(product.precio);
 
+  // URL del producto calculada una sola vez (evita repetir la logica 3 veces)
+  const productUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/productos/${product.slug}`
+    : `/productos/${product.slug}`;
+
+  // Boton compartir reutilizable en los 3 casos del card
+  const shareButton = (
+    <ShareButton
+      title={product.nombre}
+      text={`Mira ${product.nombre} en ${themeConfig.brand.name}`}
+      url={productUrl}
+      variant="icon"
+    />
+  );
+
   return (
     <article className="group bg-bg-card rounded-card border border-border-glass overflow-hidden hover:border-accent-emerald/40 transition-all duration-300 flex flex-col">
       {/* Imagen */}
@@ -132,12 +147,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             >
               Agregar al carrito
             </button>
-            <ShareButton
-              title={product.nombre}
-              text={`Mira ${product.nombre} en ${themeConfig.brand.name}`}
-              url={typeof window !== "undefined" ? `${window.location.origin}/productos/${product.slug}` : `/productos/${product.slug}`}
-              variant="icon"
-            />
+            {shareButton}
           </div>
         )}
 
@@ -146,12 +156,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             <p className="text-xs text-accent-red font-medium flex-1 text-center">
               Sin stock
             </p>
-            <ShareButton
-              title={product.nombre}
-              text={`Mira ${product.nombre} en ${themeConfig.brand.name}`}
-              url={typeof window !== "undefined" ? `${window.location.origin}/productos/${product.slug}` : `/productos/${product.slug}`}
-              variant="icon"
-            />
+            {shareButton}
           </div>
         )}
 
@@ -163,12 +168,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             >
               Ver detalle
             </Link>
-            <ShareButton
-              title={product.nombre}
-              text={`Mira ${product.nombre} en ${themeConfig.brand.name}`}
-              url={typeof window !== "undefined" ? `${window.location.origin}/productos/${product.slug}` : `/productos/${product.slug}`}
-              variant="icon"
-            />
+            {shareButton}
           </div>
         )}
       </div>
