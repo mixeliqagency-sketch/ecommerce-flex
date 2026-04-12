@@ -1,5 +1,6 @@
 // API de config — GET público (lee toggles), PUT admin (actualiza)
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getAuthSession } from "@/lib/auth";
 import { getConfig, updateConfigProperty } from "@/lib/sheets/config";
@@ -21,7 +22,8 @@ export async function GET() {
     const config = await getConfig();
     return NextResponse.json(config, {
       headers: {
-        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60",
+        // s-maxage bajo para minimizar drift cuando admin actualiza config
+        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
       },
     });
   } catch (error) {
@@ -41,6 +43,13 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const { modulo, propiedad, valor } = updateSchema.parse(body);
     await updateConfigProperty(modulo, propiedad, valor);
+    // Invalidar cache CDN para que los clientes reciban la nueva config
+    try {
+      revalidatePath("/api/config");
+      revalidatePath("/");
+    } catch (e) {
+      console.warn("[api/config PUT] revalidatePath fallo:", e);
+    }
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) {

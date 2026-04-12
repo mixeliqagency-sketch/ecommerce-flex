@@ -3,7 +3,8 @@ import { getAuthSession } from "@/lib/auth";
 import { getEmailStats } from "@/lib/sheets/emails-log";
 import { countActiveSubscribers } from "@/lib/sheets/subscribers";
 
-export const revalidate = 300;
+// Endpoint admin — nunca cachear datos privados
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const session = await getAuthSession();

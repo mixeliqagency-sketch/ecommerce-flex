@@ -4,8 +4,8 @@ import { getAuthSession } from "@/lib/auth";
 import { getDashboardMetrics } from "@/lib/sheets/metrics";
 import { getAbandonedCartsToday } from "@/lib/sheets/carts";
 
-// ISR 5 min — evita hammering de Sheets API en refreshes del dashboard
-export const revalidate = 300;
+// Endpoint admin — SIEMPRE dinamico, nunca cachear respuestas con datos privados
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const session = await getAuthSession();

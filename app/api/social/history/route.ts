@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { getSocialPostsHistory } from "@/lib/sheets/social-log";
 
-export const revalidate = 60;
+// Endpoint admin — nunca cachear datos privados
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const session = await getAuthSession();
