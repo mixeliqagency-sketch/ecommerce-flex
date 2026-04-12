@@ -1,22 +1,45 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { getProducts } from "@/lib/sheets/products";
-import { isValidEmail } from "@/lib/validation";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import type { CartItem } from "@/types";
 
-// Interfaz del body esperado en ambos endpoints de checkout
-export interface CheckoutBody {
+// Schema estricto del body de checkout con Zod.
+// Valida cantidad como entero >= 1 (previene el bug de cantidades negativas
+// que generaban subtotales negativos = ordenes gratis).
+export const CheckoutBodySchema = z.object({
+  items: z
+    .array(
+      z.object({
+        product: z
+          .object({
+            id: z.string().optional(),
+            slug: z.string().min(1),
+            nombre: z.string().min(1),
+            precio: z.number().nonnegative(),
+          })
+          .passthrough(),
+        cantidad: z.number().int().min(1).max(99),
+        variante: z.string().optional(),
+      })
+    )
+    .min(1)
+    .max(50),
+  email: z.string().email().max(200),
+  nombre: z.string().min(1).max(100),
+  apellido: z.string().min(1).max(100),
+  telefono: z.string().min(5).max(30),
+  direccion: z.string().min(3).max(300),
+  ciudad: z.string().min(1).max(100),
+  codigo_postal: z.string().min(1).max(20),
+  coupon_code: z.string().max(50).optional(),
+  referral_code: z.string().max(50).optional(),
+});
+
+// Tipo inferido del schema — compatible con CartItem para mantener retrocompatibilidad
+export type CheckoutBody = z.infer<typeof CheckoutBodySchema> & {
   items: CartItem[];
-  nombre: string;
-  apellido: string;
-  email: string;
-  telefono: string;
-  direccion: string;
-  ciudad: string;
-  codigo_postal: string;
-  coupon_code?: string;
-  referral_code?: string;
-}
+};
 
 // Resultado de la validacion — exito con body parseado o error con Response
 type ValidationResult =
@@ -25,8 +48,9 @@ type ValidationResult =
 
 /**
  * Validacion compartida para los endpoints de checkout (MercadoPago y transferencia).
- * Verifica: rate limit, campos requeridos, formato de email, largos de campo
- * y precios contra la base de datos.
+ * Verifica: rate limit, schema Zod completo (incluye cantidad > 0),
+ * precios contra la base de datos. La proteccion contra formula injection
+ * se aplica en la capa de datos (appendRow -> escapeFormulaInjection).
  *
  * @param request - Request HTTP entrante
  * @param rateLimitPrefix - Prefijo unico para el rate limiter (ej: "checkout", "checkout-transferencia")
@@ -48,44 +72,34 @@ export async function validateCheckout(
     };
   }
 
-  // Parsear body
-  const body: CheckoutBody = await request.json();
-  const { items, nombre, apellido, email } = body;
-
-  // Validaciones basicas
-  if (!items?.length) {
+  // Parsear body JSON — puede fallar si no es JSON valido
+  let rawBody: unknown;
+  try {
+    rawBody = await request.json();
+  } catch {
     return {
       ok: false,
-      error: NextResponse.json({ error: "Carrito vacio" }, { status: 400 }),
-    };
-  }
-  if (!email || !nombre || !apellido) {
-    return {
-      ok: false,
-      error: NextResponse.json({ error: "Datos incompletos" }, { status: 400 }),
+      error: NextResponse.json({ error: "Body invalido" }, { status: 400 }),
     };
   }
 
-  // Validar formato de email
-  if (!isValidEmail(email)) {
+  // Validar con Zod — rechaza cantidades <= 0, strings vacios, emails invalidos, etc.
+  const parseResult = CheckoutBodySchema.safeParse(rawBody);
+  if (!parseResult.success) {
+    // No exponer detalles del schema a clientes (puede revelar estructura interna)
     return {
       ok: false,
-      error: NextResponse.json({ error: "Email invalido" }, { status: 400 }),
+      error: NextResponse.json({ error: "Datos invalidos" }, { status: 400 }),
     };
   }
 
-  // Validar largo razonable de campos de texto (previene payloads abusivos)
-  if (nombre.length > 200 || apellido.length > 200 || email.length > 254) {
-    return {
-      ok: false,
-      error: NextResponse.json({ error: "Datos demasiado largos" }, { status: 400 }),
-    };
-  }
+  const body = parseResult.data as CheckoutBody;
+  const { items } = body;
 
   // Validar precios contra la base de datos (nunca confiar en el cliente)
   const dbProducts = await getProducts();
   for (const item of items) {
-    const dbProduct = dbProducts.find((p: any) => p.slug === item.product.slug);
+    const dbProduct = dbProducts.find((p: { slug: string }) => p.slug === item.product.slug);
     if (!dbProduct) {
       return {
         ok: false,
@@ -95,7 +109,7 @@ export async function validateCheckout(
         ),
       };
     }
-    // Usar precio real de base de datos
+    // Usar precio real de base de datos (el cliente nunca define el precio)
     item.product.precio = dbProduct.precio;
   }
 

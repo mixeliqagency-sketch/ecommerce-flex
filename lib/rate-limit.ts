@@ -26,7 +26,9 @@ interface RateLimitConfig {
   // Maximo de requests permitidos en la ventana
   maxRequests: number;
   // Duracion de la ventana en segundos
-  windowSeconds: number;
+  windowSeconds?: number;
+  // Alternativa: duracion en milisegundos (mas explicito)
+  windowMs?: number;
 }
 
 // Presets para diferentes endpoints
@@ -40,7 +42,7 @@ export const RATE_LIMITS = {
 };
 
 // Extrae IP del request (compatible con Vercel y proxies)
-function getClientIP(request: Request): string {
+export function getClientIP(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0].trim();
   const real = request.headers.get("x-real-ip");
@@ -48,24 +50,30 @@ function getClientIP(request: Request): string {
   return "unknown";
 }
 
-// Verifica rate limit — devuelve true si esta dentro del limite
+// Verifica rate limit — acepta Request o string (IP) como primer argumento.
+// NOTA: el limiter es in-memory y best-effort — en Vercel serverless cada
+// instancia tiene su propio store. Migrar a Upstash Redis para produccion.
 export function checkRateLimit(
-  request: Request,
+  requestOrIp: Request | string,
   prefix: string,
   config: RateLimitConfig
 ): { allowed: boolean; remaining: number; resetIn: number } {
   scheduleCleanup();
 
-  const ip = getClientIP(request);
+  const ip = typeof requestOrIp === "string" ? requestOrIp : getClientIP(requestOrIp);
   const key = `${prefix}:${ip}`;
   const now = Date.now();
+
+  // Resolver duracion de la ventana: windowMs tiene prioridad, fallback a windowSeconds
+  const windowMs = config.windowMs ?? (config.windowSeconds ?? 60) * 1000;
+  const windowSeconds = Math.ceil(windowMs / 1000);
 
   const entry = store.get(key);
 
   // Primera request o ventana expirada
   if (!entry || now > entry.resetAt) {
-    store.set(key, { count: 1, resetAt: now + config.windowSeconds * 1000 });
-    return { allowed: true, remaining: config.maxRequests - 1, resetIn: config.windowSeconds };
+    store.set(key, { count: 1, resetAt: now + windowMs });
+    return { allowed: true, remaining: config.maxRequests - 1, resetIn: windowSeconds };
   }
 
   // Dentro de la ventana
