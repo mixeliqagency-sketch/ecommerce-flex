@@ -18,8 +18,9 @@ const AYUDA_LINKS = [
 ];
 
 const LEGAL_LINKS = [
-  { href: "#", label: "Terminos y condiciones" },
-  { href: "#", label: "Politica de privacidad" },
+  { href: "/terminos", label: "Términos y condiciones" },
+  { href: "/politica-privacidad", label: "Política de privacidad" },
+  { href: "/arrepentimiento", label: "Botón de arrepentimiento" },
 ];
 
 export default function Footer() {
