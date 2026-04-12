@@ -43,12 +43,17 @@ export default function TrackingPage() {
   const { openAssistant } = useAssistant();
 
   const [data, setData] = useState<TrackingData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Email para desbloquear el tracking (previene leak de PII por enumeracion).
+  // Persistimos en sessionStorage para no pedirlo en cada refresh.
+  const [emailInput, setEmailInput] = useState("");
+  const [emailConfirmed, setEmailConfirmed] = useState<string | null>(null);
 
   // Mapa
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const lastOrderIdRef = useRef<string | null>(null);
 
   // Bottom sheet
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -59,18 +64,44 @@ export default function TrackingPage() {
   // Productos para carrusel de promos
   const [promos, setPromos] = useState<Product[]>([]);
 
-  // Fetch datos del pedido
+  // Al montar, intentar recuperar email previamente confirmado para este pedido
   useEffect(() => {
     if (!orderId) return;
-    fetch(`/api/tracking/${orderId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Pedido no encontrado");
+    try {
+      const saved = sessionStorage.getItem(`tracking_email_${orderId}`);
+      if (saved) setEmailConfirmed(saved);
+    } catch {}
+  }, [orderId]);
+
+  // Fetch datos del pedido — requiere email (o sesion admin del lado del server)
+  useEffect(() => {
+    if (!orderId || !emailConfirmed) return;
+    setLoading(true);
+    setError("");
+    fetch(`/api/tracking/${orderId}?email=${encodeURIComponent(emailConfirmed)}`)
+      .then(async (res) => {
+        if (!res.ok) {
+          // 404 = email incorrecto o pedido inexistente — limpiar para pedir de nuevo
+          if (res.status === 404) {
+            try { sessionStorage.removeItem(`tracking_email_${orderId}`); } catch {}
+            setEmailConfirmed(null);
+          }
+          throw new Error("Pedido no encontrado");
+        }
         return res.json();
       })
       .then(setData)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [orderId]);
+  }, [orderId, emailConfirmed]);
+
+  const handleEmailSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = emailInput.trim().toLowerCase();
+    if (!trimmed) return;
+    try { sessionStorage.setItem(`tracking_email_${orderId}`, trimmed); } catch {}
+    setEmailConfirmed(trimmed);
+  };
 
   // Fetch productos para promos
   useEffect(() => {
@@ -175,6 +206,27 @@ export default function TrackingPage() {
       );
     }
   }, [data]);
+
+  // Si el pedido cambia (SPA nav entre 2 trackings), resetear la instancia del mapa
+  // para que initMap vuelva a crearlo con los nuevos marcadores/ruta.
+  useEffect(() => {
+    if (!data) return;
+    if (lastOrderIdRef.current === data.id) return;
+    lastOrderIdRef.current = data.id;
+
+    // Limpiar instancia previa: vaciar el contenedor libera listeners de Google Maps
+    if (mapInstanceRef.current && mapRef.current) {
+      while (mapRef.current.firstChild) {
+        mapRef.current.removeChild(mapRef.current.firstChild);
+      }
+      mapInstanceRef.current = null;
+    }
+
+    // Re-inicializar si el SDK ya esta cargado
+    if (window.google?.maps) {
+      initMap();
+    }
+  }, [data, initMap]);
 
   // Cargar script de Google Maps (con cleanup para evitar doble carga en StrictMode/navegacion)
   useEffect(() => {
@@ -293,6 +345,45 @@ export default function TrackingPage() {
     if (data?.estado === "reembolsado") return "Reembolsado";
     return "En hora";
   };
+
+  // --- Email gate ---
+  // Antes de mostrar datos del pedido, exigir que el usuario ingrese el email
+  // que uso al comprar. Previene enumeracion de pedidos por ID.
+  if (!emailConfirmed) {
+    return (
+      <div className="fixed inset-0 z-[60] bg-bg-primary flex items-center justify-center px-4">
+        <form
+          onSubmit={handleEmailSubmit}
+          className="w-full max-w-sm bg-bg-card border border-border-glass rounded-2xl p-6 space-y-4"
+        >
+          <div>
+            <h1 className="font-heading font-bold text-lg text-text-primary">Ver seguimiento</h1>
+            <p className="text-text-muted text-sm mt-1">
+              Ingresa el email que usaste al hacer el pedido para ver el estado.
+            </p>
+          </div>
+          <input
+            type="email"
+            required
+            autoFocus
+            value={emailInput}
+            onChange={(e) => setEmailInput(e.target.value)}
+            placeholder="tu@email.com"
+            className="w-full bg-bg-secondary border border-border-glass rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-emerald"
+          />
+          <button
+            type="submit"
+            className="w-full bg-accent-emerald text-black font-semibold rounded-xl py-3 text-sm"
+          >
+            Ver pedido
+          </button>
+          {error && (
+            <p className="text-accent-red text-xs text-center">{error}</p>
+          )}
+        </form>
+      </div>
+    );
+  }
 
   // --- Loading ---
   if (loading) {

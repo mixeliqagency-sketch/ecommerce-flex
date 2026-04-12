@@ -30,9 +30,12 @@ export default function CartCrossSell() {
       return;
     }
 
+    const ac = new AbortController();
+
     async function load() {
       try {
-        const res = await fetch("/api/productos");
+        const res = await fetch("/api/productos", { signal: ac.signal });
+        if (!res.ok) return;
         const allProducts: Product[] = await res.json();
 
         // IDs de productos ya en el carrito
@@ -79,13 +82,16 @@ export default function CartCrossSell() {
         });
 
         setSuggestions(sugeridos.slice(0, 3));
-      } catch {
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+        console.error("[cross-sell]", err);
         setSuggestions([]);
       } finally {
-        setLoading(false);
+        if (!ac.signal.aborted) setLoading(false);
       }
     }
     load();
+    return () => ac.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemSlugs]);
 
