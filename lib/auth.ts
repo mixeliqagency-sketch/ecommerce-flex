@@ -110,12 +110,14 @@ export const authOptions: NextAuthOptions = {
       }
       // Determinar rol: comparar email contra ADMIN_EMAILS (separados por coma en .env)
       // Ejemplo: ADMIN_EMAILS=admin@tienda.com,otro@tienda.com
+      // Comparacion case-insensitive — "Pablo@X.com" matchea "pablo@x.com"
       if (token.email) {
         const adminEmails = (process.env.ADMIN_EMAILS || "")
           .split(",")
-          .map((e) => e.trim())
+          .map((e) => e.trim().toLowerCase())
           .filter(Boolean);
-        token.role = adminEmails.includes(token.email) ? "admin" : "cliente";
+        const email = token.email.toLowerCase();
+        token.role = adminEmails.includes(email) ? "admin" : "cliente";
       }
       return token;
     },

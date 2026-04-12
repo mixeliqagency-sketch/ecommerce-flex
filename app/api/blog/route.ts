@@ -1,5 +1,6 @@
 // API de blog — GET público (lista) + POST admin (crear)
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getAuthSession } from "@/lib/auth";
 import { getPublishedBlogPosts, createBlogPost } from "@/lib/sheets/blog";
@@ -39,6 +40,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const data = createSchema.parse(body);
     await createBlogPost(data);
+    // Invalidar ISR — el listado y la pagina del slug se regeneraran al proximo request
+    revalidatePath("/blog");
+    revalidatePath(`/blog/${data.slug}`);
     return NextResponse.json({ success: true, slug: data.slug });
   } catch (error) {
     if (error instanceof z.ZodError) {
