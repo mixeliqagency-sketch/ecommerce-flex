@@ -13,7 +13,12 @@ export async function POST(request: Request) {
     const result = await validateCheckout(request, "checkout-transferencia");
     if (!result.ok) return result.error;
 
-    const { items, nombre, apellido, email, telefono, direccion, ciudad, codigo_postal, coupon_code } = result.body;
+    const { items, nombre, apellido, email, telefono, direccion, ciudad, codigo_postal, coupon_code, referral_code } = result.body;
+
+    // Si vino un codigo de referido, loguearlo — la conversion real se trackea en Phase 3.5
+    if (referral_code) {
+      console.log("[checkout] Orden con referral_code:", referral_code, "- conversion tracking pendiente de Phase 3.5");
+    }
 
     // Validar stock contra la DB antes de crear la orden
     for (const item of items) {

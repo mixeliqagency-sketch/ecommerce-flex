@@ -15,6 +15,7 @@ export interface CheckoutBody {
   ciudad: string;
   codigo_postal: string;
   coupon_code?: string;
+  referral_code?: string;
 }
 
 // Resultado de la validacion — exito con body parseado o error con Response
