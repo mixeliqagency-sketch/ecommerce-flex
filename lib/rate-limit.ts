@@ -6,20 +6,17 @@ interface RateLimitEntry {
   resetAt: number;
 }
 
-// Almacen global por IP — se limpia automaticamente
+// Almacen global por IP — se limpia oportunísticamente en cada check.
+// NOTA: en Vercel serverless cada instancia tiene su propio store y setInterval
+// no sobrevive entre invocaciones, por eso hacemos cleanup inline en checkRateLimit.
 const store = new Map<string, RateLimitEntry>();
 
-// Limpieza periodica para evitar memory leak (cada 5 min)
-let cleanupScheduled = false;
-function scheduleCleanup() {
-  if (cleanupScheduled) return;
-  cleanupScheduled = true;
-  setInterval(() => {
-    const now = Date.now();
-    store.forEach((entry, key) => {
-      if (now > entry.resetAt) store.delete(key);
-    });
-  }, 5 * 60 * 1000);
+function cleanupExpired(now: number) {
+  // O(n) pero el Map es chico en práctica (pocas IPs activas por instancia).
+  // Usamos forEach (en vez de for..of) para compatibilidad con el target TS actual.
+  store.forEach((entry, k) => {
+    if (now > entry.resetAt) store.delete(k);
+  });
 }
 
 interface RateLimitConfig {
@@ -58,11 +55,13 @@ export function checkRateLimit(
   prefix: string,
   config: RateLimitConfig
 ): { allowed: boolean; remaining: number; resetIn: number } {
-  scheduleCleanup();
-
   const ip = typeof requestOrIp === "string" ? requestOrIp : getClientIP(requestOrIp);
   const key = `${prefix}:${ip}`;
   const now = Date.now();
+
+  // Cleanup oportunístico: limpiar entradas expiradas en cada check
+  // (serverless-safe, no depende de timers que no sobreviven).
+  cleanupExpired(now);
 
   // Resolver duracion de la ventana: windowMs tiene prioridad, fallback a windowSeconds
   const windowMs = config.windowMs ?? (config.windowSeconds ?? 60) * 1000;
