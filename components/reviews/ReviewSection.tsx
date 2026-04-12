@@ -42,12 +42,14 @@ export default function ReviewSection({ productSlug }: ReviewSectionProps) {
     load();
   }, [productSlug]);
 
-  // Pre-llenar nombre y email si esta logueado
+  // Pre-llenar nombre y email solo si los campos estan vacios
+  // (evita sobrescribir input del usuario cuando next-auth refresca la sesion)
   useEffect(() => {
     if (session?.user) {
-      setFormNombre(session.user.name || "");
-      setFormEmail(session.user.email || "");
+      if (!formNombre) setFormNombre(session.user.name ?? "");
+      if (!formEmail) setFormEmail(session.user.email ?? "");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
   const handleSubmit = async (e: React.FormEvent) => {

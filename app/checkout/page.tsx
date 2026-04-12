@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useCart } from "@/context/CartContext";
 import CartSummary from "@/components/cart/CartSummary";
 import Link from "next/link";
@@ -63,6 +63,12 @@ export default function CheckoutPage() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  // Clave estable del carrito para la dep del useEffect (evita re-runs por re-render del padre)
+  const itemsKey = useMemo(
+    () => items.map((i) => `${i.product.id}x${i.cantidad}`).join(","),
+    [items]
+  );
+
   // Guardar carrito como "abandonado" cuando el usuario provee su email
   // pero todavía no pagó. Se dispara una sola vez por email válido, con debounce
   // para no saturar la API mientras tipea.
@@ -79,7 +85,8 @@ export default function CheckoutPage() {
       });
     }, 1500);
     return () => clearTimeout(timer);
-  }, [form.email, items, transferenciaResult]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.email, itemsKey, transferenciaResult]);
 
   // Cargar cotizacion USDT/ARS al montar (para mostrar precio en USDT en el summary cerrado)
   useEffect(() => {

@@ -7,6 +7,7 @@ import type { BeforeInstallPromptEvent } from "@/types";
 export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [show, setShow] = useState(false);
   const [isManual, setIsManual] = useState(false);
 
@@ -33,13 +34,18 @@ export default function InstallPrompt() {
       deferredPromptRef.current = e as BeforeInstallPromptEvent;
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShow(true);
+      // Si el evento nativo llego, cancelar el fallback manual
+      if (fallbackTimerRef.current) {
+        clearTimeout(fallbackTimerRef.current);
+        fallbackTimerRef.current = null;
+      }
     };
 
     window.addEventListener("beforeinstallprompt", handler);
 
     // Fallback: si en 3s no se dispara el evento, mostrar instrucciones manuales
-    // Usa ref para evitar stale closure (el estado no se actualiza dentro del useEffect)
-    const fallbackTimer = setTimeout(() => {
+    // Guardamos el id en un ref para poder cancelarlo desde el handler nativo
+    fallbackTimerRef.current = setTimeout(() => {
       if (!deferredPromptRef.current) {
         setIsManual(true);
         setShow(true);
@@ -48,7 +54,10 @@ export default function InstallPrompt() {
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handler);
-      clearTimeout(fallbackTimer);
+      if (fallbackTimerRef.current) {
+        clearTimeout(fallbackTimerRef.current);
+        fallbackTimerRef.current = null;
+      }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
