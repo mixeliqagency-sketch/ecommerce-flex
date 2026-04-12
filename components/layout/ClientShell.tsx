@@ -17,6 +17,7 @@ import CartToast from "@/components/cart/CartToast";
 import InstallPrompt from "./InstallPrompt";
 import { EmailCapturePopup } from "@/components/tienda/EmailCapturePopup";
 import { PushPermissionPrompt } from "@/components/tienda/PushPermissionPrompt";
+import { ReferralBanner } from "@/components/tienda/ReferralBanner";
 
 export default function ClientShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -56,6 +57,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
       <CartProvider>
         <AssistantProvider>
           <ReviewsProvider>
+            <ReferralBanner />
             <TopBar />
             <Header />
             <main className="min-h-[calc(100vh-7rem)] pb-16 md:pb-0">{children}</main>
