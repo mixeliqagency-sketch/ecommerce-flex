@@ -3,9 +3,11 @@ import { z } from "zod";
 import { getAuthSession } from "@/lib/auth";
 import { enqueue } from "@/lib/sheets/queue";
 
+// Campos en ingles para alinear con el payload estandar Web Push
+// que el Service Worker lee (payload.title, payload.body, payload.url).
 const schema = z.object({
-  titulo: z.string().min(1).max(100),
-  cuerpo: z.string().min(1).max(300),
+  title: z.string().min(1).max(100),
+  body: z.string().min(1).max(300),
   url: z.string().url().optional(),
   segmento: z.enum(["todos", "con_email", "sin_email"]).default("todos"),
 });
