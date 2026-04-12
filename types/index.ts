@@ -309,6 +309,5 @@ export interface SocialMediaPost {
   estado: "pendiente" | "publicado" | "fallido";
   external_id?: string;
   fecha_creacion: string;
-  fecha_publicacion?: string;
   error?: string;
 }
