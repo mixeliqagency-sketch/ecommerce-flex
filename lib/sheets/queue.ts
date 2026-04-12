@@ -109,9 +109,11 @@ export async function markEventFailed(
     return;
   }
 
-  // Leer el row actual para obtener intentos
+  // Leer el row actual para obtener intentos.
+  // rowIndex = idx_array + 2 (número de fila en Sheets: data empieza en fila 2),
+  // por lo tanto idx_array = rowIndex - 2
   const rows = await getRows(getPrivateSheetId(), RANGES.COLA);
-  const currentRow = rows[rowIndex - 2]; // ajuste: rowIndex es 1-based con header row
+  const currentRow = rows[rowIndex - 2];
   const intentos = Number(currentRow?.[COL.COLA_EVENTO.INTENTOS]) || 0;
   const newIntentos = intentos + 1;
 

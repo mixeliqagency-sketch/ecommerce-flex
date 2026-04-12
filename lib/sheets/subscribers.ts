@@ -48,6 +48,10 @@ export async function getSubscriberByEmail(
  * - Si ya existe y está activo, devuelve el existente sin tocar nada.
  * - Si ya existe pero inactivo/rebote, lo reactiva.
  * - Si no existe, lo crea.
+ *
+ * NOTA: chequeo no atómico. Dos requests simultáneas con el mismo email
+ * pueden crear duplicados. Aceptable para MVP (volumen bajo, doble-click
+ * raro). Mitigar en frontend con debounce o disabled tras submit.
  */
 export async function addSubscriber(
   email: string,
