@@ -64,9 +64,19 @@ export default function CuentaPage() {
     reader.readAsDataURL(file);
   };
 
-  if (status === "unauthenticated") { router.push("/auth/login"); return null; }
-  if (status === "loading") {
-    return <div className="max-w-3xl mx-auto px-4 py-16 text-center"><p className="text-text-secondary">Cargando...</p></div>;
+  // Redirigir a login cuando no esta autenticado (en useEffect, no durante render)
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/login?callbackUrl=/cuenta");
+    }
+  }, [status, router]);
+
+  if (status === "loading" || status === "unauthenticated") {
+    return (
+      <main className="container mx-auto px-4 py-24 text-center">
+        <p className="text-[var(--text-secondary)]">Cargando...</p>
+      </main>
+    );
   }
 
   const initial = session?.user?.name?.charAt(0)?.toUpperCase() || "U";

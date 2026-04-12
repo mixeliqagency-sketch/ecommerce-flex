@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface SearchBarProps {
   value: string;
@@ -9,12 +9,19 @@ interface SearchBarProps {
 
 export default function SearchBar({ value, onChange }: SearchBarProps) {
   const [local, setLocal] = useState(value);
+  const isFirstRender = useRef(true);
 
-  // Debounce: espera 400ms despues de que el usuario deja de tipear
+  // Debounce: espera 400ms despues de que el usuario deja de tipear.
+  // Skipea el primer render para no disparar onChange con el valor inicial.
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     const timer = setTimeout(() => onChange(local), 400);
     return () => clearTimeout(timer);
-  }, [local, onChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [local]);
 
   // Sincronizar si el padre cambia el valor (ej: limpiar filtros)
   useEffect(() => {
