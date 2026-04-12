@@ -3,7 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { getUserByEmail, createUser } from "@/lib/google-sheets";
+import { getUserByEmail, createUser } from "@/lib/sheets/users";
 
 // Opciones de NextAuth exportadas para usar con getServerSession
 export const authOptions: NextAuthOptions = {

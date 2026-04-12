@@ -6,7 +6,7 @@ import {
   getFeaturedReviews,
   createReview,
   isVerifiedBuyer,
-} from "@/lib/google-sheets";
+} from "@/lib/sheets/reviews";
 import { requireAuth } from "@/lib/auth";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 

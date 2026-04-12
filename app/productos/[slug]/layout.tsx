@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getProductBySlug } from "@/lib/google-sheets";
+import { getProductBySlug } from "@/lib/sheets/products";
 import JsonLd from "@/components/seo/JsonLd";
 import { themeConfig } from "@/theme.config";
 

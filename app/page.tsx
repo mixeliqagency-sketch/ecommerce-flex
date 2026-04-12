@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getProducts } from "@/lib/google-sheets";
+import { getProducts } from "@/lib/sheets/products";
 import HomeProducts from "@/components/home/HomeProducts";
 import ReviewCarousel from "@/components/reviews/ReviewCarousel";
 import InviteFriends from "@/components/home/InviteFriends";

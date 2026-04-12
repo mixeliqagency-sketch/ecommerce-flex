@@ -1,5 +1,5 @@
 import { MetadataRoute } from "next";
-import { getProducts } from "@/lib/google-sheets";
+import { getProducts } from "@/lib/sheets/products";
 import { themeConfig } from "@/theme.config";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

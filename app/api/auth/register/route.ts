@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { createUser, getUserByEmail } from "@/lib/google-sheets";
+import { createUser, getUserByEmail } from "@/lib/sheets/users";
 import { isValidEmail } from "@/lib/validation";
 
 export async function POST(request: Request) {

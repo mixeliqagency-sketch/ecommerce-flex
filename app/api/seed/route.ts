@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { google } from "googleapis";
-import { getAuth, SHEET_ID } from "@/lib/google-sheets";
+import { getSheets, getPublicSheetId } from "@/lib/sheets/client";
 
 // Productos basados en publicaciones reales de MercadoLibre Argentina (marzo 2026)
 // Fotos directas del CDN de MercadoLibre (http2.mlstatic.com)
@@ -271,7 +270,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    const sheets = google.sheets({ version: "v4", auth: getAuth() });
+    const sheets = getSheets();
+    const SHEET_ID = getPublicSheetId();
 
     // 1. Crear la hoja "Productos" si no existe (o limpiar datos previos)
     // Primero verificar si la hoja existe

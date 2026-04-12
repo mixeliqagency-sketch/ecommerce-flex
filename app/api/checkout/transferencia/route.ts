@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createOrder } from "@/lib/google-sheets";
+import { createOrder } from "@/lib/sheets/orders";
 import { generateOrderId } from "@/lib/validation";
 import { validateCheckout } from "@/lib/checkout-validation";
 import { FREE_SHIPPING_THRESHOLD, FLAT_SHIPPING_COST } from "@/lib/utils";

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { getProducts } from "@/lib/google-sheets";
+import { getProducts } from "@/lib/sheets/products";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { INPUT_LIMITS } from "@/lib/validation";
 import { themeConfig } from "@/theme.config";

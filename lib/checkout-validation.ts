@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getProducts } from "@/lib/google-sheets";
+import { getProducts } from "@/lib/sheets/products";
 import { isValidEmail } from "@/lib/validation";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import type { CartItem } from "@/types";

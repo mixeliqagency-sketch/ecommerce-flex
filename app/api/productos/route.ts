@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getProducts } from "@/lib/google-sheets";
+import { getProducts } from "@/lib/sheets/products";
 
 // Quitar acentos y normalizar texto para busqueda tolerante a errores
 function normalize(text: string): string {
