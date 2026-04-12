@@ -1,9 +1,9 @@
 // lib/sheets/metrics.ts
 // Agregación de métricas para el dashboard del panel admin.
-// Lee orders via getOrdersAll() y productos via getProducts().
+// Lee orders via getOrdersAll().
 
 import { getOrdersAll } from "./orders";
-import { getProducts } from "./products";
+import { startOfDayArgentina } from "./helpers";
 import type { DashboardMetrics, Order, OrderStatus, TopProductMetric, CartItem } from "@/types";
 
 // Estados de pedido que cuentan como ventas confirmadas
@@ -13,23 +13,19 @@ function isCompleted(order: Order): boolean {
   return COMPLETED_STATES.includes(order.estado);
 }
 
-function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
 /**
  * Calcula métricas del dashboard leyendo todos los pedidos.
  * NOTA: usa O(n) sobre el total de pedidos. Para tiendas grandes, usar ISR
  * de 5 min en el endpoint que consume esto (ver sección 21 del spec).
- * Los carritos abandonados se calculan en metrics.ts:getAbandonedCartsCount() del módulo carts.
+ * NOTA: carritos_abandonados_hoy y carritos_recuperados deben ser llenados por
+ * el endpoint que consume esto (ver /api/analytics/summary), usando
+ * getAbandonedCartsToday() de lib/sheets/carts.ts.
  */
 export async function getDashboardMetrics(): Promise<DashboardMetrics> {
-  const [orders] = await Promise.all([getOrdersAll(), getProducts()]);
+  const orders = await getOrdersAll();
 
   const now = new Date();
-  const hoy = startOfDay(now);
+  const hoy = startOfDayArgentina(now);
   const ayer = new Date(hoy.getTime() - 24 * 60 * 60 * 1000);
   const semanaAtras = new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000);
   const mesAtras = new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000);

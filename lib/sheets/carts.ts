@@ -2,7 +2,7 @@
 // Tracking de carritos abandonados (tab "Carritos" en sheet privada)
 
 import crypto from "crypto";
-import { getRows, appendRow, findRowIndex, updateCell, colLetter } from "./helpers";
+import { getRows, appendRow, findRowIndex, updateCell, colLetter, startOfDayArgentina } from "./helpers";
 import { getPrivateSheetId } from "./client";
 import { RANGES, COL } from "./constants";
 import type { AbandonedCart, CartItem } from "@/types";
@@ -63,14 +63,16 @@ export async function getAbandonedCarts(): Promise<AbandonedCart[]> {
  */
 export async function getAbandonedCartsToday(): Promise<AbandonedCart[]> {
   const all = await getAbandonedCarts();
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
+  const hoy = startOfDayArgentina(new Date());
   return all.filter((c) => new Date(c.timestamp) >= hoy && c.estado === "abandonado");
 }
 
 async function updateCartStatus(cartId: string, status: CartStatus): Promise<void> {
   const rowIndex = await findRowIndex(getPrivateSheetId(), RANGES.CARRITOS, COL.CARRITO.ID, cartId);
-  if (rowIndex === -1) return;
+  if (rowIndex === -1) {
+    console.warn(`[carts] updateCartStatus: carrito ${cartId} no encontrado`);
+    return;
+  }
   await updateCell(
     getPrivateSheetId(),
     `Carritos!${colLetter(COL.CARRITO.ESTADO)}${rowIndex}`,

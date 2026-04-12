@@ -122,6 +122,19 @@ export function serializeSheetBool(value: boolean): "true" | "false" {
   return value ? "true" : "false";
 }
 
+const AR_OFFSET_HOURS = -3;
+
+/**
+ * Devuelve el inicio del día en zona horaria de Argentina (UTC-3).
+ * Vercel corre en UTC; sin este ajuste las métricas "hoy" estarían
+ * desfasadas 3 horas.
+ */
+export function startOfDayArgentina(date: Date): Date {
+  const arTime = new Date(date.getTime() + AR_OFFSET_HOURS * 60 * 60 * 1000);
+  arTime.setUTCHours(0, 0, 0, 0);
+  return new Date(arTime.getTime() - AR_OFFSET_HOURS * 60 * 60 * 1000);
+}
+
 export async function findRowIndex(
   spreadsheetId: string,
   range: string,
