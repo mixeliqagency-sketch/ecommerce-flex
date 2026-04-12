@@ -4,6 +4,7 @@ import { MercadoPagoConfig, Payment } from "mercadopago";
 import { getOrderById, updateOrderStatus } from "@/lib/sheets/orders";
 import { decrementStock } from "@/lib/sheets/products";
 import { enqueue } from "@/lib/sheets/queue";
+import { registerConversion } from "@/lib/sheets/referrals";
 
 const mpClient = new MercadoPagoConfig({
   accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN ?? "",
@@ -161,15 +162,28 @@ async function processPayment(paymentId: string): Promise<void> {
       // No propagar — el pedido ya está pagado, el admin puede ajustar stock manualmente
     }
 
-    // Encolar emails posteriores al pago (tips de uso, pedir reseña, cross-sell)
-    // Estos tienen delays configurables en n8n
+    // Encolar confirmacion inmediata + emails posteriores al pago.
+    // post_purchase_confirmation se movio aca desde el endpoint de checkout:
+    // antes se encolaba al crear la orden, lo que hacia que usuarios que
+    // nunca pagaban recibieran igual "¡Gracias por tu compra!".
     try {
+      await enqueue("post_purchase_confirmation", { orderId: externalReference, email: order.email });
       await enqueue("post_purchase_tips", { orderId: externalReference, email: order.email });
       await enqueue("post_purchase_review_request", { orderId: externalReference, email: order.email });
       await enqueue("post_purchase_cross_sell", { orderId: externalReference, email: order.email });
     } catch (err) {
       console.error("[mp-webhook] Error encolando eventos post-pago:", err);
       // No propagar — el pedido ya está pagado y el stock decrementado
+    }
+
+    // Si la orden tiene referral_code, registrar la conversion en la Sheet
+    // de referidos (suma al contador del referrer, best-effort).
+    if (order.referral_code) {
+      try {
+        await registerConversion(order.referral_code, order.total);
+      } catch (err) {
+        console.error("[mp-webhook] Error registrando conversion referral:", err);
+      }
     }
   } else if (status === "rejected" || status === "cancelled") {
     // Solo cancelar si está en pendiente_pago (la validación de transición ya lo verifica)
