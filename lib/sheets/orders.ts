@@ -3,17 +3,28 @@
 //
 // Layout real de columnas en la hoja "Pedidos" (heredado del monolito):
 // 0: id, 1: fecha, 2: email, 3: telefono, 4: nombre_completo,
-// 5: direccion_completa, 6: items_resumen, 7: subtotal, 8: envio,
+// 5: direccion_completa, 6: items_json (JSON array of CartItem), 7: subtotal, 8: envio,
 // 9: total, 10: metodo_pago, 11: estado, 12: mercadopago_id
 
 import { getRows, findRow, appendRow, findRowIndex, updateCell, colLetter } from "./helpers";
 import { getPrivateSheetId } from "./client";
 import { RANGES, COL } from "./constants";
-import type { Order, OrderStatus } from "@/types";
+import type { Order, OrderStatus, CartItem } from "@/types";
+
+// Parsea el campo items_json de la hoja. Filas legacy con text summary
+// no son parseables como JSON y devuelven array vacío.
+function parseItems(raw: string | undefined): CartItem[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    // Row legacy con text summary — no parseable, devolver vacío
+    return [];
+  }
+}
 
 // Mapea una fila cruda de la hoja Pedidos al tipo Order del dominio.
-// Nota: items se devuelve vacío porque la hoja solo guarda un resumen textual
-// (items_resumen). Quien necesite los items reales debe persistirlos aparte.
 function mapRowToOrder(row: string[]): Order {
   const nombreCompleto = row[COL.PEDIDO.NOMBRE_COMPLETO] || "";
   const [nombre, ...restoApellido] = nombreCompleto.split(" ");
@@ -31,7 +42,7 @@ function mapRowToOrder(row: string[]): Order {
     direccion,
     ciudad,
     codigo_postal,
-    items: [],
+    items: parseItems(row[COL.PEDIDO.ITEMS_JSON]),
     subtotal: Number(row[COL.PEDIDO.SUBTOTAL]) || 0,
     envio: Number(row[COL.PEDIDO.ENVIO]) || 0,
     total: Number(row[COL.PEDIDO.TOTAL]) || 0,
@@ -42,12 +53,9 @@ function mapRowToOrder(row: string[]): Order {
 }
 
 // Crea un nuevo pedido en la hoja Pedidos
-// Concatena nombre+apellido y formatea los items como texto resumido
+// Concatena nombre+apellido y serializa los items como JSON
+// para poder reconstruirlos en el dashboard (top_productos, etc.)
 export async function createOrder(order: Order): Promise<void> {
-  const itemsSummary = order.items
-    .map((i) => `${i.product.nombre} x${i.cantidad}`)
-    .join(", ");
-
   await appendRow(getPrivateSheetId(), RANGES.PEDIDOS, [
     order.id,
     order.fecha,
@@ -55,7 +63,7 @@ export async function createOrder(order: Order): Promise<void> {
     order.telefono,
     `${order.nombre} ${order.apellido}`,
     `${order.direccion}, ${order.ciudad}, ${order.codigo_postal}`,
-    itemsSummary,
+    JSON.stringify(order.items),
     order.subtotal,
     order.envio,
     order.total,
@@ -89,7 +97,7 @@ export async function getOrderById(orderId: string): Promise<{
     telefono: row[COL.PEDIDO.TELEFONO],
     nombre: row[COL.PEDIDO.NOMBRE_COMPLETO],
     direccion: row[COL.PEDIDO.DIRECCION_COMPLETA],
-    items: row[COL.PEDIDO.ITEMS_RESUMEN],
+    items: row[COL.PEDIDO.ITEMS_JSON],
     subtotal: Number(row[COL.PEDIDO.SUBTOTAL]) || 0,
     envio: Number(row[COL.PEDIDO.ENVIO]) || 0,
     total: Number(row[COL.PEDIDO.TOTAL]) || 0,
@@ -110,7 +118,7 @@ export async function getOrdersByEmail(email: string): Promise<{
     .filter((r) => r[COL.PEDIDO.EMAIL] === email)
     .map((r) => ({
       fecha: r[COL.PEDIDO.FECHA] || "",
-      items: r[COL.PEDIDO.ITEMS_RESUMEN] || "",
+      items: r[COL.PEDIDO.ITEMS_JSON] || "",
       total: Number(r[COL.PEDIDO.TOTAL]) || 0,
       estado: (r[COL.PEDIDO.ESTADO] || "pendiente_pago") as OrderStatus,
     }));

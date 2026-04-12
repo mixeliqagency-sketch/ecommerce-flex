@@ -40,7 +40,8 @@ export const COL = {
   },
   // Layout real de la hoja Pedidos (heredado del monolito):
   // 0:id, 1:fecha, 2:email, 3:telefono, 4:nombre_completo, 5:direccion_completa,
-  // 6:items_resumen, 7:subtotal, 8:envio, 9:total, 10:metodo_pago, 11:estado, 12:mercadopago_id
+  // 6:items_json (JSON array of CartItem), 7:subtotal, 8:envio, 9:total,
+  // 10:metodo_pago, 11:estado, 12:mercadopago_id
   PEDIDO: {
     ID: 0,
     FECHA: 1,
@@ -48,7 +49,7 @@ export const COL = {
     TELEFONO: 3,
     NOMBRE_COMPLETO: 4,
     DIRECCION_COMPLETA: 5,
-    ITEMS_RESUMEN: 6,
+    ITEMS_JSON: 6,
     SUBTOTAL: 7,
     ENVIO: 8,
     TOTAL: 9,
