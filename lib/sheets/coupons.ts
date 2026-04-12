@@ -33,8 +33,18 @@ export async function getCoupons(): Promise<Coupon[]> {
   return rows.map(mapRowToCoupon).filter((c) => c.codigo);
 }
 
+// Normaliza un codigo de cupon a UPPERCASE + trim para lookups case-insensitive.
+function normalizeCode(codigo: string): string {
+  return codigo.toUpperCase().trim();
+}
+
 export async function getCouponByCode(codigo: string): Promise<Coupon | null> {
-  const row = await findRow(getPrivateSheetId(), RANGES.CUPONES, COL.CUPON.CODIGO, codigo);
+  const row = await findRow(
+    getPrivateSheetId(),
+    RANGES.CUPONES,
+    COL.CUPON.CODIGO,
+    normalizeCode(codigo)
+  );
   return row ? mapRowToCoupon(row) : null;
 }
 
@@ -46,14 +56,15 @@ export async function getCouponByCode(codigo: string): Promise<Coupon | null> {
  * (creación de cupones es admin-only). Migrar a batchUpdate o Postgres si crece.
  */
 export async function createCoupon(coupon: Omit<Coupon, "usos_actuales">): Promise<void> {
+  const codigoNorm = normalizeCode(coupon.codigo);
   // Verificar que no exista
-  const existing = await getCouponByCode(coupon.codigo);
+  const existing = await getCouponByCode(codigoNorm);
   if (existing) {
-    throw new Error(`El cupón ${coupon.codigo} ya existe`);
+    throw new Error(`El cupón ${codigoNorm} ya existe`);
   }
 
   await appendRow(getPrivateSheetId(), RANGES.CUPONES, [
-    coupon.codigo,
+    codigoNorm,
     coupon.descuento_porcentaje,
     coupon.fecha_vencimiento,
     coupon.usos_maximos,
@@ -70,11 +81,12 @@ export async function createCoupon(coupon: Omit<Coupon, "usos_actuales">): Promi
  * concurrencia. Migrar a batchUpdate o Postgres si el volumen crece.
  */
 export async function incrementCouponUsage(codigo: string): Promise<void> {
-  const rowIndex = await findRowIndex(getPrivateSheetId(), RANGES.CUPONES, COL.CUPON.CODIGO, codigo);
-  if (rowIndex === -1) throw new Error(`Cupón ${codigo} no encontrado`);
+  const codigoNorm = normalizeCode(codigo);
+  const rowIndex = await findRowIndex(getPrivateSheetId(), RANGES.CUPONES, COL.CUPON.CODIGO, codigoNorm);
+  if (rowIndex === -1) throw new Error(`Cupón ${codigoNorm} no encontrado`);
 
-  const coupon = await getCouponByCode(codigo);
-  if (!coupon) throw new Error(`Cupón ${codigo} no encontrado`);
+  const coupon = await getCouponByCode(codigoNorm);
+  if (!coupon) throw new Error(`Cupón ${codigoNorm} no encontrado`);
 
   await updateCell(
     getPrivateSheetId(),
@@ -84,8 +96,9 @@ export async function incrementCouponUsage(codigo: string): Promise<void> {
 }
 
 export async function deactivateCoupon(codigo: string): Promise<void> {
-  const rowIndex = await findRowIndex(getPrivateSheetId(), RANGES.CUPONES, COL.CUPON.CODIGO, codigo);
-  if (rowIndex === -1) throw new Error(`Cupón ${codigo} no encontrado`);
+  const codigoNorm = normalizeCode(codigo);
+  const rowIndex = await findRowIndex(getPrivateSheetId(), RANGES.CUPONES, COL.CUPON.CODIGO, codigoNorm);
+  if (rowIndex === -1) throw new Error(`Cupón ${codigoNorm} no encontrado`);
 
   await updateCell(
     getPrivateSheetId(),
@@ -102,12 +115,18 @@ export async function deactivateCoupon(codigo: string): Promise<void> {
  * @returns El cupón si es válido, null si no.
  */
 export async function validateCoupon(codigo: string): Promise<Coupon | null> {
-  const coupon = await getCouponByCode(codigo);
+  const coupon = await getCouponByCode(normalizeCode(codigo));
   if (!coupon) return null;
   if (!coupon.activo) return null;
 
-  // Verificar vencimiento
-  const vencimiento = new Date(coupon.fecha_vencimiento);
+  // Verificar vencimiento — si viene solo la fecha (YYYY-MM-DD), interpretar
+  // como fin del dia en zona horaria Argentina (UTC-3) para evitar que
+  // expire 13 horas antes (cuando JS la parseaba como UTC midnight).
+  const rawDate = coupon.fecha_vencimiento;
+  const isoDate = /^\d{4}-\d{2}-\d{2}$/.test(rawDate)
+    ? `${rawDate}T23:59:59-03:00`
+    : rawDate;
+  const vencimiento = new Date(isoDate);
   if (isNaN(vencimiento.getTime()) || vencimiento < new Date()) return null;
 
   // Verificar usos (0 = ilimitado)

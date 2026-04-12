@@ -14,6 +14,11 @@ import { getPrivateSheetId } from "./client";
 import { RANGES, COL } from "./constants";
 import type { Subscriber } from "@/types";
 
+// Normaliza email a lowercase + trim para lookups case-insensitive.
+function normalizeEmail(email: string): string {
+  return email.toLowerCase().trim();
+}
+
 function mapRowToSubscriber(row: string[]): Subscriber {
   const c = COL.SUSCRIPTOR;
   return {
@@ -38,7 +43,7 @@ export async function getSubscriberByEmail(
     getPrivateSheetId(),
     RANGES.SUSCRIPTORES,
     COL.SUSCRIPTOR.EMAIL,
-    email
+    normalizeEmail(email)
   );
   return row ? mapRowToSubscriber(row) : null;
 }
@@ -57,10 +62,11 @@ export async function addSubscriber(
   email: string,
   source: string
 ): Promise<{ subscriber: Subscriber; wasCreated: boolean }> {
-  const existing = await getSubscriberByEmail(email);
+  const emailNorm = normalizeEmail(email);
+  const existing = await getSubscriberByEmail(emailNorm);
   if (existing) {
     if (existing.estado !== "activo") {
-      await updateSubscriberStatus(email, "activo");
+      await updateSubscriberStatus(emailNorm, "activo");
       return {
         subscriber: { ...existing, estado: "activo" },
         wasCreated: false,
@@ -71,7 +77,7 @@ export async function addSubscriber(
 
   const subscriber: Subscriber = {
     id: crypto.randomUUID(),
-    email,
+    email: emailNorm,
     fecha: new Date().toISOString(),
     source,
     estado: "activo",
@@ -93,14 +99,15 @@ export async function updateSubscriberStatus(
   email: string,
   estado: Subscriber["estado"]
 ): Promise<void> {
+  const emailNorm = normalizeEmail(email);
   const rowIndex = await findRowIndex(
     getPrivateSheetId(),
     RANGES.SUSCRIPTORES,
     COL.SUSCRIPTOR.EMAIL,
-    email
+    emailNorm
   );
   if (rowIndex === -1) {
-    console.warn(`[subscribers] Suscriptor ${email} no encontrado`);
+    console.warn(`[subscribers] Suscriptor ${emailNorm} no encontrado`);
     return;
   }
   await updateCell(

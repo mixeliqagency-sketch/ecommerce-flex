@@ -20,6 +20,11 @@ import type { ReferralLink } from "@/types";
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH = 8;
 
+// Normaliza email a lowercase + trim para lookups case-insensitive.
+function normalizeEmail(email: string): string {
+  return email.toLowerCase().trim();
+}
+
 function generateCode(): string {
   const bytes = crypto.randomBytes(CODE_LENGTH);
   let out = "";
@@ -63,7 +68,7 @@ export async function getReferralByUserEmail(email: string): Promise<ReferralLin
     getPrivateSheetId(),
     RANGES.REFERIDOS,
     COL.REFERIDO.USER_EMAIL,
-    email
+    normalizeEmail(email)
   );
   return row ? mapRowToReferral(row) : null;
 }
@@ -72,7 +77,8 @@ export async function getReferralByUserEmail(email: string): Promise<ReferralLin
  * Obtiene (o crea) el link de referido del usuario. Idempotente.
  */
 export async function getOrCreateReferral(userEmail: string): Promise<ReferralLink> {
-  const existing = await getReferralByUserEmail(userEmail);
+  const emailNorm = normalizeEmail(userEmail);
+  const existing = await getReferralByUserEmail(emailNorm);
   if (existing) return existing;
 
   // Generar codigo unico (colision improbable pero chequeamos)
@@ -90,7 +96,7 @@ export async function getOrCreateReferral(userEmail: string): Promise<ReferralLi
 
   const referral: ReferralLink = {
     id: crypto.randomUUID(),
-    user_email: userEmail,
+    user_email: emailNorm,
     codigo,
     fecha_creacion: new Date().toISOString(),
     total_clicks: 0,
