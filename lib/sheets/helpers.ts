@@ -58,6 +58,30 @@ export async function findRows(
   return rows.filter((row) => row[colIndex] === value);
 }
 
+/**
+ * Escapa strings para evitar formula injection en Sheets.
+ * Prefija con apostrofe si empieza con =, +, -, @, \t, \r (caracteres que
+ * Sheets interpretaria como formula con valueInputOption USER_ENTERED).
+ * Un usuario malicioso podria inyectar =HYPERLINK("javascript:...") o
+ * =IMPORTXML(...) via campos de resena/pedido/suscripcion.
+ */
+export function escapeFormulaInjection(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  if (value.length === 0) return value;
+  const firstChar = value[0];
+  if (
+    firstChar === "=" ||
+    firstChar === "+" ||
+    firstChar === "-" ||
+    firstChar === "@" ||
+    firstChar === "\t" ||
+    firstChar === "\r"
+  ) {
+    return `'${value}`;
+  }
+  return value;
+}
+
 export async function appendRow(
   spreadsheetId: string,
   range: string,
@@ -65,11 +89,12 @@ export async function appendRow(
 ): Promise<void> {
   return withRetry(async () => {
     const sheets = getSheets();
+    const safeValues = values.map(escapeFormulaInjection);
     await sheets.spreadsheets.values.append({
       spreadsheetId,
       range,
       valueInputOption: "USER_ENTERED",
-      requestBody: { values: [values] },
+      requestBody: { values: [safeValues] },
     });
   }, `appendRow(${range})`);
 }
@@ -81,11 +106,12 @@ export async function updateCell(
 ): Promise<void> {
   return withRetry(async () => {
     const sheets = getSheets();
+    const safeValue = escapeFormulaInjection(value);
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range,
       valueInputOption: "USER_ENTERED",
-      requestBody: { values: [[value]] },
+      requestBody: { values: [[safeValue]] },
     });
   }, `updateCell(${range})`);
 }
