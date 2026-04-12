@@ -13,7 +13,7 @@ export const themeConfig = {
     url: "https://mititienda.vercel.app",       // URL de produccion
     logo: "/logo.svg",                          // Ruta al logo en /public/
     useLogo: false,                             // true = mostrar imagen, false = mostrar texto con tipografia
-    creator: "MiTienda",
+    creator: "Mixeliq",
   },
 
   // === ESTILOS VISUALES ===
