@@ -64,8 +64,8 @@ export const COL = {
     TITULO: 5,
     CONTENIDO: 6,
     FECHA: 7,
-    VERIFICADO: 8,
-    APROBADO: 9,
+    APROBADO: 8,
+    VERIFICADO: 9,
     DESTACADA: 10,
   },
 } as const;
