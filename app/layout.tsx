@@ -1,35 +1,28 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, Poppins, Montserrat, Playfair_Display, Open_Sans, Roboto, Lato } from "next/font/google";
+import { Space_Grotesk, Inter } from "next/font/google";
 import ClientShell from "@/components/layout/ClientShell";
 import JsonLd from "@/components/seo/JsonLd";
 import { themeConfig } from "@/theme.config";
 import { getThemeCSS } from "@/lib/theme-css";
 import "./globals.css";
 
-// Next.js requiere que los font loaders se llamen como const a nivel de modulo
-const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-Space-Grotesk", weight: ["400", "500", "600", "700"] });
-const inter = Inter({ subsets: ["latin"], variable: "--font-Inter", weight: ["400", "500", "600", "700"] });
-const poppins = Poppins({ subsets: ["latin"], variable: "--font-Poppins", weight: ["400", "500", "600", "700"] });
-const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-Montserrat", weight: ["400", "500", "600", "700"] });
-const playfairDisplay = Playfair_Display({ subsets: ["latin"], variable: "--font-Playfair-Display", weight: ["400", "500", "600", "700"] });
-const openSans = Open_Sans({ subsets: ["latin"], variable: "--font-Open-Sans", weight: ["400", "500", "600", "700"] });
-const roboto = Roboto({ subsets: ["latin"], variable: "--font-Roboto", weight: ["400", "500", "700"] });
-const lato = Lato({ subsets: ["latin"], variable: "--font-Lato", weight: ["400", "700"] });
+// Fuentes activas: Space Grotesk para titulos, Inter para cuerpo de texto
+// Las variables CSS --font-heading y --font-body son referenciadas directamente en globals.css
+const headingFont = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-heading",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
 
-// Mapeo nombre → instancia para seleccionar solo las configuradas en theme.config
-const ALL_FONTS: Record<string, { variable: string }> = {
-  "Space Grotesk": spaceGrotesk, "Inter": inter, "Poppins": poppins,
-  "Montserrat": montserrat, "Playfair Display": playfairDisplay,
-  "Open Sans": openSans, "Roboto": roboto, "Lato": lato,
-};
+const bodyFont = Inter({
+  subsets: ["latin"],
+  variable: "--font-body",
+  display: "swap",
+  weight: ["400", "500", "600"],
+});
 
-// Solo aplicar las CSS variables de las fuentes configuradas (heading y body)
-const headingFont = ALL_FONTS[themeConfig.styles.fonts.heading];
-const bodyFont = ALL_FONTS[themeConfig.styles.fonts.body];
-const headingFontVar = `--font-${themeConfig.styles.fonts.heading.replace(/ /g, "-")}`;
-const bodyFontVar = `--font-${themeConfig.styles.fonts.body.replace(/ /g, "-")}`;
-
-const fontClasses = [headingFont?.variable, bodyFont?.variable].filter(Boolean).join(" ");
+const fontClasses = `${headingFont.variable} ${bodyFont.variable}`;
 
 const { brand, seo } = themeConfig;
 
@@ -76,20 +69,14 @@ export const metadata: Metadata = {
 };
 
 // CSS estatico generado en build-time desde theme.config (no acepta input de usuario, seguro)
-const THEME_STYLE = getThemeCSS() + `
-  :root {
-    --font-heading: var(${headingFontVar}), sans-serif;
-    --font-body: var(${bodyFontVar}), sans-serif;
-  }
-`;
+// Los fonts ya usan --font-heading y --font-body como variable names, no se necesita alias
+const THEME_STYLE = getThemeCSS();
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={fontClasses} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* Variables CSS generadas desde theme.config.ts en build-time (contenido estatico, no user input) */}
         <style>{THEME_STYLE}</style>
       </head>
