@@ -40,13 +40,18 @@ export async function PUT(
     await updateOrderStatus(orderId, status);
 
     // Si la transicion es hacia "pagado" y la orden existe, encolar
-    // confirmacion + registrar conversion de referido. Esto cubre el caso
-    // de transferencia bancaria que no tiene webhook automatico.
+    // confirmacion + registrar conversion de referido. Esto cubre metodos
+    // sin webhook automatico (transferencia, crypto, etc).
+    // MercadoPago dispara los mismos eventos desde el webhook — excluirlo
+    // para evitar duplicar emails al cliente.
+    const needsManualTrigger =
+      prevOrder && prevOrder.metodo_pago !== "mercadopago";
+
     if (
       status === "pagado" &&
       prevOrder &&
       prevOrder.estado !== "pagado" &&
-      prevOrder.metodo_pago === "transferencia"
+      needsManualTrigger
     ) {
       try {
         await enqueue("post_purchase_confirmation", {
