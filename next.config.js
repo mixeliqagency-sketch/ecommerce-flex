@@ -14,13 +14,6 @@ const nextConfig = {
       },
     ],
   },
-  async redirects() {
-    return [
-      // Redirigir rutas viejas a la nueva ruta unificada /cardio
-      { source: "/correr", destination: "/cardio", permanent: true },
-      { source: "/carreras", destination: "/cardio", permanent: true },
-    ];
-  },
   async headers() {
     return [
       {
