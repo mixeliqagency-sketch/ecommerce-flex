@@ -9,6 +9,7 @@ import { useCart } from "@/context/CartContext";
 import { useReviews } from "@/context/ReviewsContext";
 import StarRating from "@/components/reviews/StarRating";
 import ReviewSection from "@/components/reviews/ReviewSection";
+import { FaqSchema } from "@/components/seo/FaqSchema";
 import type { Product } from "@/types";
 
 export default function ProductoDetallePage() {
@@ -68,12 +69,38 @@ export default function ProductoDetallePage() {
 
   const descuento = calcDiscount(product.precio_anterior || 0, product.precio);
 
+  // FAQs dinamicas para schema.org FAQPage (rich snippet en Google)
+  const faqs: { question: string; answer: string }[] = [];
+  if (product.beneficios || product.descripcion) {
+    faqs.push({
+      question: `¿Para qué sirve ${product.nombre}?`,
+      answer: product.beneficios || product.descripcion,
+    });
+  }
+  if (product.dosis_recomendada) {
+    faqs.push({
+      question: `¿Cómo se toma ${product.nombre}?`,
+      answer: product.dosis_recomendada,
+    });
+  }
+  if (product.mejor_momento) {
+    faqs.push({
+      question: "¿Cuál es el mejor momento para tomarlo?",
+      answer: product.mejor_momento,
+    });
+  }
+  faqs.push({
+    question: `¿Cuánto cuesta ${product.nombre}?`,
+    answer: `El precio actual es $${product.precio.toLocaleString("es-AR")} con envío a todo el país.`,
+  });
+
   const handleAddToCart = () => {
     addItem(product, cantidad, selectedVariante);
   };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
+      <FaqSchema items={faqs} />
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-xs text-text-muted mb-6">
         <Link href="/" className="hover:text-text-secondary">Inicio</Link>

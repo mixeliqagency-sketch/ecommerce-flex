@@ -1,5 +1,6 @@
 import { MetadataRoute } from "next";
 import { getProducts } from "@/lib/sheets/products";
+import { getPublishedBlogPosts } from "@/lib/sheets/blog";
 import { themeConfig } from "@/theme.config";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -24,5 +25,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Si falla Sheets, devolver solo paginas estaticas
   }
 
-  return [...staticPages, ...productPages];
+  // Blog: pagina raiz + posts publicados
+  let posts: Awaited<ReturnType<typeof getPublishedBlogPosts>> = [];
+  try {
+    posts = await getPublishedBlogPosts();
+  } catch (err) {
+    console.error("[sitemap] Error leyendo blog posts:", err);
+  }
+
+  const blogRootUrl: MetadataRoute.Sitemap[number] = {
+    url: `${baseUrl}/blog`,
+    lastModified: new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  };
+
+  const blogUrls: MetadataRoute.Sitemap = posts.map((post) => ({
+    url: `${baseUrl}/blog/${post.slug}`,
+    lastModified: new Date(post.fecha),
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  }));
+
+  return [...staticPages, ...productPages, blogRootUrl, ...blogUrls];
 }
