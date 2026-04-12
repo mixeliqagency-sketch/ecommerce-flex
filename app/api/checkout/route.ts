@@ -6,6 +6,7 @@ import { validateCheckout } from "@/lib/checkout-validation";
 import { calcEnvio } from "@/lib/utils";
 import { getProductBySlug } from "@/lib/sheets/products";
 import { validateCoupon, incrementCouponUsage } from "@/lib/sheets/coupons";
+import { enqueue } from "@/lib/sheets/queue";
 
 export async function POST(request: Request) {
   try {
@@ -81,6 +82,16 @@ export async function POST(request: Request) {
         console.error("[checkout] Error incrementando uso de cupón:", err);
       });
     }
+
+    // Encolar confirmación inmediata (email de "gracias por tu orden")
+    // Los emails posteriores (tips, review, cross-sell) se encolan cuando el pago se confirma en el webhook
+    await enqueue("post_purchase_confirmation", {
+      orderId: orderId,
+      email,
+    }).catch((err) => {
+      console.error("[checkout] Error encolando post_purchase_confirmation:", err);
+      // No bloquear el checkout por esto
+    });
 
     // Crear preferencia de pago en MercadoPago
     const mpItems = items.map((i) => ({

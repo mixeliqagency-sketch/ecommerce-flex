@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import crypto from "crypto";
-import { appendRow } from "@/lib/sheets/helpers";
-import { getPrivateSheetId } from "@/lib/sheets/client";
+import { addSubscriber } from "@/lib/sheets/subscribers";
+import { enqueue } from "@/lib/sheets/queue";
 
 const schema = z.object({
   email: z.string().email(),
@@ -14,19 +13,23 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { email, source } = schema.parse(body);
 
-    // Append a tab "Suscriptores" — si no existe, falla silencioso pero logueamos
+    // Suscribir (idempotente) y encolar welcome solo si es nuevo
     try {
-      await appendRow(getPrivateSheetId(), "Suscriptores!A2:D", [
-        crypto.randomUUID(),
-        email,
-        new Date().toISOString(),
-        source ?? "unknown",
-      ]);
+      const subscriber = await addSubscriber(email, source ?? "unknown");
+
+      // Detectar si es nuevo: fecha creada hace menos de 5 segundos = recien creado
+      const isNew =
+        Math.abs(Date.now() - new Date(subscriber.fecha).getTime()) < 5000;
+      if (isNew) {
+        await enqueue("welcome_series_start", {
+          email: subscriber.email,
+          subscriberId: subscriber.id,
+          source,
+        });
+      }
     } catch (err) {
-      console.error(
-        "[api/email/subscribe] Error al guardar (probablemente tab 'Suscriptores' no existe):",
-        err
-      );
+      console.error("[api/email/subscribe] Error al suscribir:", err);
+      // Fallback: loguear para que Pablo vea el email
       console.log("[email-captured]", email, source);
     }
 

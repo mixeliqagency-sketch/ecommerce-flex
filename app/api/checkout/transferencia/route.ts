@@ -5,6 +5,7 @@ import { validateCheckout } from "@/lib/checkout-validation";
 import { calcEnvio, calcTransferPrice } from "@/lib/utils";
 import { getProductBySlug } from "@/lib/sheets/products";
 import { validateCoupon, incrementCouponUsage } from "@/lib/sheets/coupons";
+import { enqueue } from "@/lib/sheets/queue";
 
 export async function POST(request: Request) {
   try {
@@ -84,6 +85,16 @@ export async function POST(request: Request) {
         console.error("[checkout-transferencia] Error incrementando uso de cupón:", err);
       });
     }
+
+    // Encolar confirmación inmediata (email de "gracias por tu orden")
+    // Los emails posteriores (tips, review, cross-sell) se encolan cuando el pago se confirma
+    await enqueue("post_purchase_confirmation", {
+      orderId: orderId,
+      email,
+    }).catch((err) => {
+      console.error("[checkout-transferencia] Error encolando post_purchase_confirmation:", err);
+      // No bloquear el checkout por esto
+    });
 
     // Responder con los datos necesarios para mostrar la pantalla de confirmacion
     return NextResponse.json({

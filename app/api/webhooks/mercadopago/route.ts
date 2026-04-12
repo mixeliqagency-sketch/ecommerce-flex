@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { MercadoPagoConfig, Payment } from "mercadopago";
 import { getOrderById, updateOrderStatus } from "@/lib/sheets/orders";
 import { decrementStock } from "@/lib/sheets/products";
+import { enqueue } from "@/lib/sheets/queue";
 
 const mpClient = new MercadoPagoConfig({
   accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN ?? "",
@@ -158,6 +159,17 @@ async function processPayment(paymentId: string): Promise<void> {
     } catch (err) {
       console.error("[mp-webhook] Error decrementando stock para", externalReference, err);
       // No propagar — el pedido ya está pagado, el admin puede ajustar stock manualmente
+    }
+
+    // Encolar emails posteriores al pago (tips de uso, pedir reseña, cross-sell)
+    // Estos tienen delays configurables en n8n
+    try {
+      await enqueue("post_purchase_tips", { orderId: externalReference, email: order.email });
+      await enqueue("post_purchase_review_request", { orderId: externalReference, email: order.email });
+      await enqueue("post_purchase_cross_sell", { orderId: externalReference, email: order.email });
+    } catch (err) {
+      console.error("[mp-webhook] Error encolando eventos post-pago:", err);
+      // No propagar — el pedido ya está pagado y el stock decrementado
     }
   } else if (status === "rejected" || status === "cancelled") {
     // Solo cancelar si está en pendiente_pago (la validación de transición ya lo verifica)
