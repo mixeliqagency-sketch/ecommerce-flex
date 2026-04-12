@@ -1,37 +1,47 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { createUser, getUserByEmail } from "@/lib/sheets/users";
-import { isValidEmail } from "@/lib/validation";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+// Schema estricto: password minimo 8 (recomendacion NIST/OWASP actual)
+const registerSchema = z.object({
+  email: z.string().email().max(200),
+  password: z.string().min(8).max(200),
+  nombre: z.string().min(1).max(100),
+  apellido: z.string().min(1).max(100).optional(),
+});
 
 export async function POST(request: Request) {
   try {
-    const { email, nombre, apellido, password } = await request.json();
-
-    // Validaciones basicas
-    if (!email || !nombre || !apellido || !password) {
+    // Rate limit — max 5 registros por minuto por IP (anti-spam)
+    const rateCheck = checkRateLimit(request, "register", {
+      maxRequests: 5,
+      windowMs: 60_000,
+    });
+    if (!rateCheck.allowed) {
       return NextResponse.json(
-        { error: "Todos los campos son obligatorios" },
-        { status: 400 }
+        { error: "Muchos intentos, proba en unos minutos" },
+        { status: 429 }
       );
     }
 
-    // Validar formato de email
-    if (!isValidEmail(email)) {
+    const rawBody = await request.json();
+    const parsed = registerSchema.safeParse(rawBody);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Email invalido" },
+        { error: "Datos invalidos" },
         { status: 400 }
       );
     }
+    const { email, password, nombre } = parsed.data;
+    const apellido = parsed.data.apellido ?? "";
 
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: "La contraseña debe tener al menos 6 caracteres" },
-        { status: 400 }
-      );
-    }
+    // Normalizar email para consistencia
+    const emailNorm = email.trim().toLowerCase();
 
-    // Verificar si el email ya existe
-    const existing = await getUserByEmail(email);
+    // Verificar si el email ya existe (pre-check)
+    const existing = await getUserByEmail(emailNorm);
     if (existing) {
       return NextResponse.json(
         { error: "Ya existe una cuenta con ese email" },
@@ -39,11 +49,23 @@ export async function POST(request: Request) {
       );
     }
 
-    // Hashear contraseña — salt rounds 12 (mínimo recomendado por OWASP 2026)
+    // Hashear contrasena — salt rounds 12 (minimo recomendado por OWASP 2026)
     const password_hash = await bcrypt.hash(password, 12);
 
-    // Guardar usuario en Google Sheets
-    await createUser({ email, nombre, apellido, password_hash });
+    // Crear usuario
+    await createUser({ email: emailNorm, nombre, apellido, password_hash });
+
+    // Race-check: si hubo double-click y se creo otro row, detectarlo.
+    // Con Sheets no hay transacciones atomicas, pero al menos logeamos inconsistencias.
+    // Un limpiador batch puede deduplicar despues.
+    try {
+      const postCheck = await getUserByEmail(emailNorm);
+      if (!postCheck) {
+        console.warn("[register] Usuario creado pero no encontrado en post-check:", emailNorm);
+      }
+    } catch {
+      // ignorar — el usuario ya se creo
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error) {
