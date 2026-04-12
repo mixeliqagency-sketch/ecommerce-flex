@@ -90,6 +90,38 @@ export async function updateCell(
   }, `updateCell(${range})`);
 }
 
+/**
+ * Convierte un índice de columna 0-based a letra de columna (A, B, C, ..., Z, AA, AB, ...).
+ * Ejemplo: colLetter(0) = "A", colLetter(4) = "E", colLetter(26) = "AA"
+ */
+export function colLetter(index: number): string {
+  let result = "";
+  let n = index;
+  while (n >= 0) {
+    result = String.fromCharCode(65 + (n % 26)) + result;
+    n = Math.floor(n / 26) - 1;
+  }
+  return result;
+}
+
+/**
+ * Parsea un valor de Sheets a booleano.
+ * Acepta: "true", "TRUE", "True", "1", "si", "sí", "yes" → true.
+ * Acepta: "false", "FALSE", "0", "no", "" → false.
+ */
+export function parseSheetBool(value: string | undefined): boolean {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase();
+  return ["true", "1", "si", "sí", "yes"].includes(normalized);
+}
+
+/**
+ * Serializa un booleano para escribir en Sheets.
+ */
+export function serializeSheetBool(value: boolean): "true" | "false" {
+  return value ? "true" : "false";
+}
+
 export async function findRowIndex(
   spreadsheetId: string,
   range: string,

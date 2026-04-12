@@ -1,7 +1,16 @@
 // lib/sheets/coupons.ts
 // CRUD de cupones con validación (vencimiento + usos máximos)
 
-import { getRows, findRow, appendRow, updateCell, findRowIndex } from "./helpers";
+import {
+  getRows,
+  findRow,
+  appendRow,
+  updateCell,
+  findRowIndex,
+  colLetter,
+  parseSheetBool,
+  serializeSheetBool,
+} from "./helpers";
 import { getPrivateSheetId } from "./client";
 import { RANGES, COL } from "./constants";
 import type { Coupon } from "@/types";
@@ -14,8 +23,8 @@ function mapRowToCoupon(row: string[]): Coupon {
     fecha_vencimiento: row[c.VENCIMIENTO] ?? "",
     usos_maximos: Number(row[c.USOS_MAX]) || 0,
     usos_actuales: Number(row[c.USOS_ACTUALES]) || 0,
-    activo: row[c.ACTIVO] === "true",
-    descripcion: row[c.DESCRIPCION] ?? undefined,
+    activo: parseSheetBool(row[c.ACTIVO]),
+    descripcion: row[c.DESCRIPCION] || undefined, // normaliza "" a undefined
   };
 }
 
@@ -29,6 +38,13 @@ export async function getCouponByCode(codigo: string): Promise<Coupon | null> {
   return row ? mapRowToCoupon(row) : null;
 }
 
+/**
+ * Crea un cupón nuevo.
+ * NOTA: read-modify-write no atómico. La verificación de existencia y el append
+ * no están protegidos contra concurrencia: dos llamadas simultáneas con el mismo
+ * código podrían insertar duplicados. Aceptable para MVP por baja concurrencia
+ * (creación de cupones es admin-only). Migrar a batchUpdate o Postgres si crece.
+ */
 export async function createCoupon(coupon: Omit<Coupon, "usos_actuales">): Promise<void> {
   // Verificar que no exista
   const existing = await getCouponByCode(coupon.codigo);
@@ -42,11 +58,17 @@ export async function createCoupon(coupon: Omit<Coupon, "usos_actuales">): Promi
     coupon.fecha_vencimiento,
     coupon.usos_maximos,
     0, // usos_actuales inicial
-    coupon.activo ? "true" : "false",
+    serializeSheetBool(coupon.activo),
     coupon.descripcion ?? "",
   ]);
 }
 
+/**
+ * Incrementa el contador de usos del cupón.
+ * NOTA: read-modify-write no atómico. En el peor caso, dos checkouts concurrentes
+ * pueden incrementar al mismo tiempo y perder un uso. Aceptable para MVP por baja
+ * concurrencia. Migrar a batchUpdate o Postgres si el volumen crece.
+ */
 export async function incrementCouponUsage(codigo: string): Promise<void> {
   const rowIndex = await findRowIndex(getPrivateSheetId(), RANGES.CUPONES, COL.CUPON.CODIGO, codigo);
   if (rowIndex === -1) throw new Error(`Cupón ${codigo} no encontrado`);
@@ -54,21 +76,30 @@ export async function incrementCouponUsage(codigo: string): Promise<void> {
   const coupon = await getCouponByCode(codigo);
   if (!coupon) throw new Error(`Cupón ${codigo} no encontrado`);
 
-  // Columna E (índice 4) = usos_actuales
-  await updateCell(getPrivateSheetId(), `Cupones!E${rowIndex}`, coupon.usos_actuales + 1);
+  await updateCell(
+    getPrivateSheetId(),
+    `Cupones!${colLetter(COL.CUPON.USOS_ACTUALES)}${rowIndex}`,
+    coupon.usos_actuales + 1
+  );
 }
 
 export async function deactivateCoupon(codigo: string): Promise<void> {
   const rowIndex = await findRowIndex(getPrivateSheetId(), RANGES.CUPONES, COL.CUPON.CODIGO, codigo);
   if (rowIndex === -1) throw new Error(`Cupón ${codigo} no encontrado`);
 
-  // Columna F (índice 5) = activo
-  await updateCell(getPrivateSheetId(), `Cupones!F${rowIndex}`, "false");
+  await updateCell(
+    getPrivateSheetId(),
+    `Cupones!${colLetter(COL.CUPON.ACTIVO)}${rowIndex}`,
+    serializeSheetBool(false)
+  );
 }
 
 /**
- * Valida un cupón: existe, está activo, no venció, no superó usos máximos.
- * Retorna el cupón si es válido, o null si no.
+ * Valida un cupón: existe, activo, no vencido, usos disponibles.
+ * NOTA: fecha_vencimiento se interpreta como ISO date. La comparación usa
+ * UTC del servidor (Vercel). Para zona horaria de Argentina, el admin debe
+ * setear una fecha futura con margen suficiente.
+ * @returns El cupón si es válido, null si no.
  */
 export async function validateCoupon(codigo: string): Promise<Coupon | null> {
   const coupon = await getCouponByCode(codigo);
