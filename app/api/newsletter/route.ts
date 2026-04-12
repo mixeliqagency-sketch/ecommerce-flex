@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthSession } from "@/lib/auth";
 import { enqueue } from "@/lib/sheets/queue";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   asunto: z.string().min(1).max(200),
@@ -14,6 +15,15 @@ export async function POST(req: NextRequest) {
   const session = await getAuthSession();
   if (!session || session.user.role !== "admin") {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
+  // Rate limit aunque sea admin-only: defensa en profundidad si se filtra sesion.
+  const rateCheck = checkRateLimit(req, "newsletter", {
+    maxRequests: 10,
+    windowMs: 60_000,
+  });
+  if (!rateCheck.allowed) {
+    return NextResponse.json({ error: "Muchas solicitudes" }, { status: 429 });
   }
 
   try {
