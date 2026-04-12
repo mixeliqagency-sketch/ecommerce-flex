@@ -11,6 +11,9 @@ import { getPrivateSheetId } from "./client";
 import { RANGES, COL } from "./constants";
 import type { Order, OrderStatus, CartItem } from "@/types";
 
+// NOTA: getOrderById y getOrdersByEmail delegan en mapRowToOrder para
+// devolver el tipo Order completo con items parseados como CartItem[].
+
 // Parsea el campo items_json de la hoja. Filas legacy con text summary
 // no son parseables como JSON y devuelven array vacío.
 function parseItems(raw: string | undefined): CartItem[] {
@@ -74,54 +77,17 @@ export async function createOrder(order: Order): Promise<void> {
 }
 
 // Busca un pedido por su ID único
-export async function getOrderById(orderId: string): Promise<{
-  id: string;
-  fecha: string;
-  email: string;
-  telefono: string;
-  nombre: string;
-  direccion: string;
-  items: string;
-  subtotal: number;
-  envio: number;
-  total: number;
-  metodo_pago: string;
-  estado: OrderStatus;
-} | null> {
+export async function getOrderById(orderId: string): Promise<Order | null> {
   const row = await findRow(getPrivateSheetId(), RANGES.PEDIDOS, COL.PEDIDO.ID, orderId);
-  if (!row) return null;
-  return {
-    id: row[COL.PEDIDO.ID],
-    fecha: row[COL.PEDIDO.FECHA],
-    email: row[COL.PEDIDO.EMAIL],
-    telefono: row[COL.PEDIDO.TELEFONO],
-    nombre: row[COL.PEDIDO.NOMBRE_COMPLETO],
-    direccion: row[COL.PEDIDO.DIRECCION_COMPLETA],
-    items: row[COL.PEDIDO.ITEMS_JSON],
-    subtotal: Number(row[COL.PEDIDO.SUBTOTAL]) || 0,
-    envio: Number(row[COL.PEDIDO.ENVIO]) || 0,
-    total: Number(row[COL.PEDIDO.TOTAL]) || 0,
-    metodo_pago: row[COL.PEDIDO.METODO_PAGO] || "",
-    estado: (row[COL.PEDIDO.ESTADO] || "pendiente_pago") as OrderStatus,
-  };
+  return row ? mapRowToOrder(row) : null;
 }
 
-// Devuelve todos los pedidos de un email dado (para el asistente virtual)
-export async function getOrdersByEmail(email: string): Promise<{
-  fecha: string;
-  items: string;
-  total: number;
-  estado: OrderStatus;
-}[]> {
+// Devuelve todos los pedidos de un email dado
+export async function getOrdersByEmail(email: string): Promise<Order[]> {
   const rows = await getRows(getPrivateSheetId(), RANGES.PEDIDOS);
   return rows
     .filter((r) => r[COL.PEDIDO.EMAIL] === email)
-    .map((r) => ({
-      fecha: r[COL.PEDIDO.FECHA] || "",
-      items: r[COL.PEDIDO.ITEMS_JSON] || "",
-      total: Number(r[COL.PEDIDO.TOTAL]) || 0,
-      estado: (r[COL.PEDIDO.ESTADO] || "pendiente_pago") as OrderStatus,
-    }));
+    .map(mapRowToOrder);
 }
 
 /**

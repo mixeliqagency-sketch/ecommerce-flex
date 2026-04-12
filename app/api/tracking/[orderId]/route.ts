@@ -24,13 +24,18 @@ export async function GET(
       return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
     }
 
+    // Serializar items al formato "nombre xN, nombre xN" que espera la pagina de tracking
+    const itemsSummary = order.items
+      .map((it) => `${it.product?.nombre ?? "Producto"} x${it.cantidad}`)
+      .join(", ");
+
     // No exponer datos sensibles (email completo, telefono)
     return NextResponse.json({
       id: order.id,
       fecha: order.fecha,
-      nombre: order.nombre.split(" ")[0], // Solo primer nombre
-      direccion_ciudad: order.direccion.split(",").slice(-2).join(",").trim(), // Solo ciudad y CP
-      items: order.items,
+      nombre: order.nombre, // mapRowToOrder ya devuelve solo el primer nombre
+      direccion_ciudad: [order.ciudad, order.codigo_postal].filter(Boolean).join(", "),
+      items: itemsSummary,
       total: order.total,
       estado: order.estado,
       metodo_pago: order.metodo_pago,
