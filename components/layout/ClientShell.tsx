@@ -16,6 +16,7 @@ import CartDrawer from "@/components/cart/CartDrawer";
 import CartToast from "@/components/cart/CartToast";
 import InstallPrompt from "./InstallPrompt";
 import { EmailCapturePopup } from "@/components/tienda/EmailCapturePopup";
+import { PushPermissionPrompt } from "@/components/tienda/PushPermissionPrompt";
 
 export default function ClientShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -65,6 +66,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
             <CartToast />
             {pathname === "/auth/registro" && <InstallPrompt />}
             <EmailCapturePopup />
+            <PushPermissionPrompt />
           </ReviewsProvider>
         </AssistantProvider>
       </CartProvider>
