@@ -2,14 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { addSubscriber } from "@/lib/sheets/subscribers";
 import { enqueue } from "@/lib/sheets/queue";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
-  email: z.string().email(),
-  source: z.string().optional(), // "popup", "footer", etc.
+  email: z.string().email().max(200),
+  source: z.string().max(50).optional(), // "popup", "footer", etc.
 });
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit — 10 subs por minuto por IP (anti-spam)
+    const rateCheck = checkRateLimit(req, "email-subscribe", {
+      maxRequests: 10,
+      windowMs: 60_000,
+    });
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: "Muchas solicitudes" }, { status: 429 });
+    }
     const body = await req.json();
     const { email, source } = schema.parse(body);
 

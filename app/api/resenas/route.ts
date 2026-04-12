@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import {
   getReviewsByProduct,
   getReviewSummary,
@@ -8,7 +9,17 @@ import {
   isVerifiedBuyer,
 } from "@/lib/sheets/reviews";
 import { requireAuth } from "@/lib/auth";
-import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+// Schema estricto — largos maximos previenen payloads abusivos.
+// El escape contra formula injection se aplica en la capa de datos (appendRow).
+const createReviewSchema = z.object({
+  product_slug: z.string().min(1).max(200),
+  nombre: z.string().min(1).max(100),
+  calificacion: z.union([z.number(), z.string()]),
+  titulo: z.string().min(1).max(200),
+  contenido: z.string().min(1).max(1000),
+});
 
 // GET /api/resenas?producto=slug — resenas de un producto
 // GET /api/resenas?destacadas=true — resenas destacadas para home
@@ -49,8 +60,11 @@ export async function GET(req: NextRequest) {
 // POST /api/resenas — crear nueva resena
 export async function POST(req: NextRequest) {
   try {
-    // Rate limiting — maximo 30 requests por minuto por IP
-    const rateCheck = checkRateLimit(req, "resenas", RATE_LIMITS.general);
+    // Rate limiting estricto — maximo 5 resenas por minuto por IP (anti-spam)
+    const rateCheck = checkRateLimit(req, "resenas", {
+      maxRequests: 5,
+      windowMs: 60_000,
+    });
     if (!rateCheck.allowed) {
       return NextResponse.json({ error: "Demasiados intentos." }, { status: 429 });
     }
@@ -64,27 +78,17 @@ export async function POST(req: NextRequest) {
     // Usar el email de la sesion, no el del body (previene spoofing)
     const email = session.user!.email!;
 
-    const body = await req.json();
-    const { product_slug, nombre, calificacion, titulo, contenido } = body;
-
-    if (!product_slug || !nombre || !calificacion || !titulo || !contenido) {
-      return NextResponse.json({ error: "Faltan campos obligatorios" }, { status: 400 });
+    const rawBody = await req.json();
+    const parsed = createReviewSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Datos invalidos" }, { status: 400 });
     }
+    const { product_slug, nombre, titulo, contenido } = parsed.data;
 
-    // Validar que calificacion sea un numero entre 1 y 5
-    const calif = Number(calificacion);
+    // Validar que calificacion sea un numero entero entre 1 y 5
+    const calif = Number(parsed.data.calificacion);
     if (!Number.isInteger(calif) || calif < 1 || calif > 5) {
       return NextResponse.json({ error: "Calificacion debe ser un numero entero entre 1 y 5" }, { status: 400 });
-    }
-
-    // Validar largo maximo del contenido (previene payloads abusivos)
-    if (typeof contenido !== "string" || contenido.length > 1000) {
-      return NextResponse.json({ error: "El contenido no puede superar los 1000 caracteres" }, { status: 400 });
-    }
-
-    // Validar largo del titulo
-    if (typeof titulo !== "string" || titulo.length > 200) {
-      return NextResponse.json({ error: "El titulo no puede superar los 200 caracteres" }, { status: 400 });
     }
 
     // Verificar si compro el producto

@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { incrementClicks, getReferralByCode } from "@/lib/sheets/referrals";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
-  codigo: z.string().min(1),
+  codigo: z.string().min(1).max(50),
 });
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit — 20 por minuto por IP
+    const rateCheck = checkRateLimit(req, "referidos-track", {
+      maxRequests: 20,
+      windowMs: 60_000,
+    });
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ valid: false }, { status: 429 });
+    }
     const body = await req.json();
     const { codigo } = schema.parse(body);
 

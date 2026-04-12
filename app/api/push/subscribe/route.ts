@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthSession } from "@/lib/auth";
 import { saveSubscription } from "@/lib/sheets/push";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   endpoint: z.string().url(),
@@ -13,6 +14,15 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit — 10 por minuto por IP
+    const rateCheck = checkRateLimit(req, "push-subscribe", {
+      maxRequests: 10,
+      windowMs: 60_000,
+    });
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: "Muchas solicitudes" }, { status: 429 });
+    }
+
     const body = await req.json();
     const { endpoint, keys } = schema.parse(body);
 
