@@ -17,7 +17,18 @@ function deepFreeze<T>(obj: T): T {
 }
 
 // Defaults — se usan para inicializar el tab "Config" la primera vez
-// y como fallback si Sheets falla
+// y como fallback si Sheets falla.
+//
+// TODO (Phase 4): los siguientes toggles están definidos pero NO están
+// wired-up en la app todavía — Pablo debe implementarlos cuando los necesite:
+//   - emailMarketing.* (welcomeSeries, abandonedCart, postPurchase, winback, newsletters)
+//   - modoCatalogo.enabled (reemplazar "Agregar al carrito" por "Consultar por WhatsApp")
+//   - socialMedia.* (instagram, twitter, tiktok)
+//   - seoPro.* (blog, faqSchema, breadcrumbs, aiVisibility)
+//   - googleAds.* (trackingId, remarketing)
+//   - cupones.enabled
+//   - referidos.enabled
+// Actualmente wired-up: kira.enabled, pushNotifications.enabled, poweredBy.enabled.
 export const DEFAULT_CONFIG: ModuleConfig = deepFreeze({
   dashboard: { enabled: true },
   emailMarketing: {
@@ -103,6 +114,9 @@ export async function getConfig(): Promise<ModuleConfig> {
     return config;
   } catch (error) {
     console.error("[config] Error leyendo config, usando defaults:", error);
+    // Cache negativo breve (30s) para evitar thundering herd durante incidentes Sheets
+    cachedConfig = DEFAULT_CONFIG;
+    cacheTimestamp = Date.now() - (CACHE_TTL_MS - 30 * 1000);
     return DEFAULT_CONFIG;
   }
 }
@@ -121,9 +135,6 @@ export async function updateConfigProperty(
   propiedad: string,
   valor: string | number | boolean
 ): Promise<void> {
-  // Invalidar cache antes de escribir
-  invalidateConfigCache();
-
   const rows = await getRows(getPublicSheetId(), RANGES.CONFIG);
   const existingIndex = rows.findIndex(
     (row) => row[COL.CONFIG.MODULO] === modulo && row[COL.CONFIG.PROPIEDAD] === propiedad
@@ -144,6 +155,10 @@ export async function updateConfigProperty(
     // Append new row
     await appendRow(getPublicSheetId(), RANGES.CONFIG, [modulo, propiedad, valorStr]);
   }
+
+  // Invalidar cache DESPUES del write — si lo haciamos antes, otra request
+  // concurrente podia refillear el cache con datos stale entre invalidate y write.
+  invalidateConfigCache();
 }
 
 /**
