@@ -7,9 +7,18 @@ import { getPublicSheetId } from "./client";
 import { RANGES, COL } from "./constants";
 import type { ModuleConfig } from "@/types";
 
+// Deep freeze recursivo para proteger DEFAULT_CONFIG de mutaciones accidentales
+function deepFreeze<T>(obj: T): T {
+  if (obj === null || typeof obj !== "object") return obj;
+  Object.values(obj as Record<string, unknown>).forEach((v) => {
+    if (typeof v === "object" && v !== null) deepFreeze(v);
+  });
+  return Object.freeze(obj);
+}
+
 // Defaults — se usan para inicializar el tab "Config" la primera vez
 // y como fallback si Sheets falla
-export const DEFAULT_CONFIG: ModuleConfig = {
+export const DEFAULT_CONFIG: ModuleConfig = deepFreeze({
   dashboard: { enabled: true },
   emailMarketing: {
     enabled: true,
@@ -29,7 +38,7 @@ export const DEFAULT_CONFIG: ModuleConfig = {
   modoCatalogo: { enabled: false },
   poweredBy: { enabled: true },
   stockAlert: { threshold: 5 },
-};
+});
 
 // Cache en módulo (reduce llamadas a Sheets dentro de la misma instancia serverless).
 // NOTA: No persiste entre cold starts ni entre instancias diferentes. Para cache
@@ -44,7 +53,8 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
  */
 function parseValue(raw: string): unknown {
   const normalized = raw.trim().toLowerCase();
-  if (["true", "false", "1", "0", "si", "sí", "no", "yes"].includes(normalized)) {
+  // Solo tratar como boolean palabras inequívocas — NO "0"/"1" que son números legítimos
+  if (["true", "false", "si", "sí", "no", "yes"].includes(normalized)) {
     return parseSheetBool(raw);
   }
   const num = Number(raw);
@@ -101,6 +111,10 @@ export async function getConfig(): Promise<ModuleConfig> {
  * Actualiza una sola propiedad de un módulo.
  * Ejemplo: updateConfigProperty("kira", "enabled", false)
  * Invalida el cache automáticamente.
+ *
+ * WARNING: No es concurrency-safe. Dos llamadas simultáneas pueden
+ * perder updates. Serializar en la capa de API route si hay riesgo de
+ * concurrencia (admin-only, baja frecuencia, aceptable para MVP).
  */
 export async function updateConfigProperty(
   modulo: string,
