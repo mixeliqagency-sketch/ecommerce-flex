@@ -8,9 +8,13 @@ const mpClient = new MercadoPagoConfig({
 });
 const paymentClient = new Payment(mpClient);
 
-// Idempotencia a nivel de instancia serverless.
-// NOTA: no funciona entre instancias (Vercel puede tener múltiples),
-// pero combinado con la verificación de estado del pedido, es efectivo.
+/**
+ * Cache de idempotencia por instancia serverless.
+ * NOTA: En Vercel con múltiples instancias activas, dos webhooks del mismo
+ * payment pueden colarse. La validación de estado en processPayment
+ * (POST_PAYMENT_STATES) es la segunda línea de defensa: si el pedido ya está
+ * pagado/enviado/etc, no se re-procesa.
+ */
 const processedPayments = new Set<string>();
 const CACHE_CLEANUP_MS = 60 * 60 * 1000; // 1 hora
 
@@ -40,6 +44,17 @@ function verifySignature(
   }
 
   if (!ts || !hash) return false;
+
+  // Validar timestamp dentro de 5 minutos (prevención de replay attacks)
+  const tsNum = Number(ts);
+  if (!Number.isFinite(tsNum)) return false;
+
+  // MP puede enviar ts en segundos o milisegundos. Probar ambos.
+  const tsMs = tsNum > 1e12 ? tsNum : tsNum * 1000;
+  if (Math.abs(Date.now() - tsMs) > 5 * 60 * 1000) {
+    console.error("[mp-webhook] Timestamp fuera de rango:", tsNum);
+    return false;
+  }
 
   const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
   const expectedHash = crypto
@@ -83,22 +98,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Firma inválida" }, { status: 401 });
     }
 
-    // Idempotencia en memoria
+    // Idempotencia en memoria (detección de duplicados)
     if (processedPayments.has(paymentId)) {
       return NextResponse.json({ received: true, duplicate: true }, { status: 200 });
     }
-    processedPayments.add(paymentId);
-    setTimeout(() => processedPayments.delete(paymentId), CACHE_CLEANUP_MS);
 
-    // Responder 200 inmediato y procesar async
-    // NOTA: en Vercel serverless, el proceso puede ser terminado después de
-    // la respuesta. Para workloads críticos considerar usar una cola (Task queue
-    // en Sheets) o Edge function. Para MVP esto es aceptable.
-    processPayment(paymentId).catch((err) => {
+    // Procesar sincrónicamente — puede lanzar. Recién marcamos como procesado
+    // si tuvo éxito, para que MP pueda reintentar si falla.
+    try {
+      await processPayment(paymentId);
+      processedPayments.add(paymentId);
+      setTimeout(() => processedPayments.delete(paymentId), CACHE_CLEANUP_MS);
+      return NextResponse.json({ received: true }, { status: 200 });
+    } catch (err) {
       console.error("[mp-webhook] Error procesando pago", paymentId, err);
-    });
-
-    return NextResponse.json({ received: true }, { status: 200 });
+      // Devolver 500 para que MP reintente
+      return NextResponse.json({ error: "Error procesando pago" }, { status: 500 });
+    }
   } catch (error) {
     console.error("[mp-webhook] Error:", error);
     // Devolver 200 para evitar reintentos en errores no recuperables
