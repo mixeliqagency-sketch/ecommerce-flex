@@ -14,6 +14,10 @@ export const RANGES = {
   METRICAS: "Metricas!A2:F",
   CARRITOS: "Carritos!A2:E",
   COLA: "Cola!A2:F",
+  SUSCRIPTORES: "Suscriptores!A2:F",
+  BLOG: "Blog!A2:J",
+  KEYWORDS: "Keywords!A2:E",
+  EMAILS_LOG: "EmailsLog!A2:I",
 } as const;
 
 export const COL = {
@@ -113,6 +117,43 @@ export const COL = {
     TIMESTAMP: 3,
     ESTADO: 4,
     INTENTOS: 5,
+  },
+  SUSCRIPTOR: {
+    ID: 0,
+    EMAIL: 1,
+    FECHA: 2,
+    SOURCE: 3,
+    ESTADO: 4,
+    ULTIMA_ACTIVIDAD: 5,
+  },
+  BLOG_POST: {
+    SLUG: 0,
+    TITULO: 1,
+    DESCRIPCION: 2,
+    CONTENIDO: 3,
+    CATEGORIA: 4,
+    AUTOR: 5,
+    FECHA: 6,
+    IMAGEN_URL: 7,
+    KEYWORDS: 8,
+    PUBLICADO: 9,
+  },
+  KEYWORD: {
+    KEYWORD: 0,
+    PAGINA_DESTINO: 1,
+    VOLUMEN: 2,
+    POSICION: 3,
+    INTENCION: 4,
+  },
+  EMAIL_LOG: {
+    ID: 0,
+    TIPO: 1,
+    DESTINATARIO: 2,
+    ASUNTO: 3,
+    FECHA_ENVIO: 4,
+    ABIERTO: 5,
+    FECHA_APERTURA: 6,
+    ERROR: 7,
   },
 } as const;
 

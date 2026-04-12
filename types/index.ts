@@ -204,3 +204,69 @@ export interface KiraInsight {
   stock_bajo: string[]; // slugs de productos con stock < threshold
   sugerencias: string[];
 }
+
+// === PHASE 2: MARKETING ===
+
+export interface Subscriber {
+  id: string;
+  email: string;
+  fecha: string; // ISO
+  source: string; // "popup", "checkout", "footer", "welcome"
+  estado: "activo" | "inactivo" | "rebote";
+  ultima_actividad?: string;
+}
+
+export interface BlogPost {
+  slug: string;
+  titulo: string;
+  descripcion: string; // meta description SEO
+  contenido: string; // markdown
+  categoria: string;
+  autor: string;
+  fecha: string; // ISO
+  imagen_url?: string;
+  keywords: string[];
+  publicado: boolean;
+  tiempo_lectura?: number; // minutos, calculado
+}
+
+export interface Keyword {
+  keyword: string;
+  pagina_destino: string;
+  volumen_estimado?: number;
+  posicion?: number;
+  intencion: "informacional" | "comercial" | "transaccional" | "navegacional";
+}
+
+export interface EmailLog {
+  id: string;
+  tipo: string;
+  destinatario: string;
+  asunto: string;
+  fecha_envio: string;
+  abierto?: boolean;
+  fecha_apertura?: string;
+  error?: string;
+}
+
+export type QueueEventType =
+  | "welcome_series_start"
+  | "abandoned_cart_1h"
+  | "abandoned_cart_24h"
+  | "abandoned_cart_48h"
+  | "post_purchase_confirmation"
+  | "post_purchase_tips"
+  | "post_purchase_review_request"
+  | "post_purchase_cross_sell"
+  | "winback_60d"
+  | "newsletter_send"
+  | "sunset_cleanup";
+
+export interface QueueEvent {
+  id: string;
+  tipo: QueueEventType;
+  datos: Record<string, unknown>;
+  timestamp: string;
+  estado: "pendiente" | "procesado" | "fallido";
+  intentos: number;
+}
