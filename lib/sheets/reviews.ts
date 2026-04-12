@@ -11,7 +11,6 @@
 import { getRows, appendRow } from "./helpers";
 import { getPublicSheetId, getPrivateSheetId } from "./client";
 import { RANGES, COL } from "./constants";
-import { getProducts } from "./products";
 import type { Review, ReviewSummary, OrderStatus } from "@/types";
 
 // Estados post-pago que califican a un comprador como "verificado".
@@ -145,22 +144,34 @@ export async function createReview(review: Omit<Review, "id" | "fecha">): Promis
 // Solo cuentan pedidos cuyo estado ya pasó el pago (ver VERIFIED_BUYER_STATES):
 // "pagado", "preparando", "enviado" o "entregado". Quedan excluidos
 // "creado", "pendiente_pago" y "cancelado".
+// Parsea el JSON de items de un pedido y verifica si contiene el slug dado.
+// Reemplaza un match por substring (propenso a falsos positivos) por un
+// match estructurado sobre el slug.
+function isItemMatch(itemsRaw: string, productSlug: string): boolean {
+  try {
+    const parsed = JSON.parse(itemsRaw);
+    if (!Array.isArray(parsed)) return false;
+    return parsed.some(
+      (it: { product?: { slug?: string } }) => it?.product?.slug === productSlug
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function isVerifiedBuyer(
   email: string,
   productSlug: string
 ): Promise<boolean> {
   const rows = await getRows(getPrivateSheetId(), RANGES.PEDIDOS);
-  const products = await getProducts();
-  const product = products.find((p) => p.slug === productSlug);
-  if (!product) return false;
 
   return rows.some((row) => {
     const orderEmail = row[2]; // columna email en layout de pedidos
-    const items = row[6] || ""; // columna items_resumen
+    const itemsJson = row[6] || ""; // columna items_json (JSON array de CartItem)
     const estado = row[11] || ""; // columna estado
     return (
       orderEmail === email &&
-      items.toLowerCase().includes(product.nombre.toLowerCase()) &&
+      isItemMatch(itemsJson, productSlug) &&
       VERIFIED_BUYER_STATES.includes(estado as OrderStatus)
     );
   });

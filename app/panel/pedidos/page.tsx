@@ -1,5 +1,6 @@
 import { getOrdersAll } from "@/lib/sheets/orders";
 import { OrderStatusBadge } from "@/components/panel/OrderStatusBadge";
+import { OrderActions } from "@/components/panel/OrderActions";
 import { formatPrice } from "@/lib/utils";
 
 export const revalidate = 30;
@@ -23,7 +24,8 @@ export default async function PedidosPage() {
                 <th className="py-2 pr-4">Total</th>
                 <th className="py-2 pr-4">Método</th>
                 <th className="py-2 pr-4">Estado</th>
-                <th className="py-2">Fecha</th>
+                <th className="py-2 pr-4">Fecha</th>
+                <th className="py-2">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -34,7 +36,8 @@ export default async function PedidosPage() {
                   <td className="py-2 pr-4">{formatPrice(order.total)}</td>
                   <td className="py-2 pr-4">{order.metodo_pago}</td>
                   <td className="py-2 pr-4"><OrderStatusBadge status={order.estado} /></td>
-                  <td className="py-2">{new Date(order.fecha).toLocaleDateString("es-AR")}</td>
+                  <td className="py-2 pr-4">{new Date(order.fecha).toLocaleDateString("es-AR")}</td>
+                  <td className="py-2"><OrderActions orderId={order.id} currentStatus={order.estado} /></td>
                 </tr>
               ))}
             </tbody>

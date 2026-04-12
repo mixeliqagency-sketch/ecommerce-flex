@@ -31,7 +31,15 @@ export function EmailCapturePopup() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // TODO Phase 2: llamar a /api/email/subscribe cuando exista
+    try {
+      await fetch("/api/email/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, source: "popup" }),
+      });
+    } catch (err) {
+      console.error("subscribe error", err);
+    }
     localStorage.setItem(STORAGE_KEY, "true");
     setSubmitted(true);
     setTimeout(() => setShow(false), 2500);

@@ -1,7 +1,7 @@
 // lib/sheets/products.ts
 // Funciones para leer productos desde Google Sheets (sheet pública)
 
-import { getRows } from "./helpers";
+import { getRows, findRowIndex, updateCell, colLetter } from "./helpers";
 import { getPublicSheetId } from "./client";
 import { RANGES, COL } from "./constants";
 import type { Product } from "@/types";
@@ -42,4 +42,29 @@ export async function getProducts(): Promise<Product[]> {
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   const products = await getProducts();
   return products.find((p) => p.slug === slug) ?? null;
+}
+
+/**
+ * Decrementa el stock de un producto (best-effort con Sheets API).
+ * NOTA: Sheets no es transaccional — bajo concurrencia puede haber oversell.
+ * Aceptable para Phase 1; Phase 2 migrar a lock optimista con columna version.
+ */
+export async function decrementStock(slug: string, cantidad: number): Promise<void> {
+  const product = await getProductBySlug(slug);
+  if (!product) throw new Error(`Producto ${slug} no encontrado para decrementar stock`);
+
+  const rowIndex = await findRowIndex(
+    getPublicSheetId(),
+    RANGES.PRODUCTOS,
+    COL.PRODUCTO.SLUG,
+    slug
+  );
+  if (rowIndex === -1) throw new Error(`Producto ${slug} no encontrado en sheet`);
+
+  const newStock = Math.max(0, product.stock - cantidad);
+  await updateCell(
+    getPublicSheetId(),
+    `Productos!${colLetter(COL.PRODUCTO.STOCK)}${rowIndex}`,
+    newStock
+  );
 }

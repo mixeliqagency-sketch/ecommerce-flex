@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { MercadoPagoConfig, Payment } from "mercadopago";
 import { getOrderById, updateOrderStatus } from "@/lib/sheets/orders";
+import { decrementStock } from "@/lib/sheets/products";
 
 const mpClient = new MercadoPagoConfig({
   accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN ?? "",
@@ -148,6 +149,16 @@ async function processPayment(paymentId: string): Promise<void> {
   if (status === "approved") {
     await updateOrderStatus(externalReference, "pagado");
     console.log("[mp-webhook] Pedido", externalReference, "marcado como pagado");
+
+    // Decrementar stock de cada item (best-effort, no bloquear si falla)
+    try {
+      for (const item of order.items) {
+        await decrementStock(item.product.slug, item.cantidad);
+      }
+    } catch (err) {
+      console.error("[mp-webhook] Error decrementando stock para", externalReference, err);
+      // No propagar — el pedido ya está pagado, el admin puede ajustar stock manualmente
+    }
   } else if (status === "rejected" || status === "cancelled") {
     // Solo cancelar si está en pendiente_pago (la validación de transición ya lo verifica)
     if (order.estado === "pendiente_pago") {

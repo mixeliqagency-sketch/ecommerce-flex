@@ -63,6 +63,24 @@ export default function CheckoutPage() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  // Guardar carrito como "abandonado" cuando el usuario provee su email
+  // pero todavía no pagó. Se dispara una sola vez por email válido, con debounce
+  // para no saturar la API mientras tipea.
+  useEffect(() => {
+    if (!form.email || !form.email.includes("@") || items.length === 0) return;
+    if (transferenciaResult) return; // ya completó el pedido
+    const timer = setTimeout(() => {
+      fetch("/api/carritos/abandoned", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: form.email, items }),
+      }).catch((err) => {
+        console.error("[checkout] no se pudo guardar carrito abandonado", err);
+      });
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [form.email, items, transferenciaResult]);
+
   // Cargar cotizacion USDT/ARS al montar (para mostrar precio en USDT en el summary cerrado)
   useEffect(() => {
     if (usdtRate !== null) return;

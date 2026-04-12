@@ -19,6 +19,7 @@ import { EmailCapturePopup } from "@/components/tienda/EmailCapturePopup";
 
 export default function ClientShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const isPanel = pathname?.startsWith("/panel") ?? false;
 
   // Scroll al tope cada vez que cambia la ruta
   useEffect(() => {
@@ -41,6 +42,13 @@ export default function ClientShell({ children }: { children: React.ReactNode })
       }
     } catch {}
   }, []);
+
+  if (isPanel) {
+    // Rutas de /panel renderizan sin chrome de tienda: el layout del panel
+    // provee su propio header/sidebar. Solo envolvemos en SessionProvider
+    // para que useSession siga funcionando.
+    return <SessionProvider>{children}</SessionProvider>;
+  }
 
   return (
     <SessionProvider>
