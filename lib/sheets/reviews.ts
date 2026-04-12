@@ -12,7 +12,16 @@ import { getRows, appendRow } from "./helpers";
 import { getPublicSheetId, getPrivateSheetId } from "./client";
 import { RANGES, COL } from "./constants";
 import { getProducts } from "./products";
-import type { Review, ReviewSummary } from "@/types";
+import type { Review, ReviewSummary, OrderStatus } from "@/types";
+
+// Estados post-pago que califican a un comprador como "verificado".
+// Un verified buyer es alguien cuya orden ya tiene el pago confirmado.
+const VERIFIED_BUYER_STATES: OrderStatus[] = [
+  "pagado",
+  "preparando",
+  "enviado",
+  "entregado",
+];
 
 // Convierte una fila de la hoja en un objeto Review tipado
 function mapRowToReview(row: string[], overrides?: Partial<Review>): Review {
@@ -133,7 +142,9 @@ export async function createReview(review: Omit<Review, "id" | "fecha">): Promis
 }
 
 // Verifica si un email realizó una compra confirmada del producto dado
-// Busca en pedidos (sheet privada) que no estén en estado "pendiente"
+// Solo cuentan pedidos cuyo estado ya pasó el pago (ver VERIFIED_BUYER_STATES):
+// "pagado", "preparando", "enviado" o "entregado". Quedan excluidos
+// "creado", "pendiente_pago" y "cancelado".
 export async function isVerifiedBuyer(
   email: string,
   productSlug: string
@@ -150,7 +161,7 @@ export async function isVerifiedBuyer(
     return (
       orderEmail === email &&
       items.toLowerCase().includes(product.nombre.toLowerCase()) &&
-      estado !== "pendiente"
+      VERIFIED_BUYER_STATES.includes(estado as OrderStatus)
     );
   });
 }

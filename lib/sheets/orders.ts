@@ -90,7 +90,7 @@ export async function getOrdersByEmail(email: string): Promise<{
 
 // Actualiza el estado de un pedido (ej: "pendiente_pago" → "pagado")
 // Lanza error si el pedido no existe
-export async function updateOrderStatus(orderId: string, status: string): Promise<void> {
+export async function updateOrderStatus(orderId: string, status: OrderStatus): Promise<void> {
   const rowIndex = await findRowIndex(
     getPrivateSheetId(),
     RANGES.PEDIDOS,
