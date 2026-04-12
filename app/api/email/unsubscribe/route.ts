@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { updateSubscriberStatus } from "@/lib/sheets/subscribers";
+import { verifyUnsubscribeToken } from "@/lib/unsubscribe-token";
 
 const schema = z.object({
   email: z.string().email(),
 });
 
+// POST: body con email — se usa desde formularios internos autenticados
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -16,17 +18,23 @@ export async function POST(req: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Email inválido" }, { status: 400 });
     }
-    console.error("[api/email/unsubscribe]", error);
+    console.error("[api/email/unsubscribe POST]", error);
     return NextResponse.json({ error: "Error" }, { status: 500 });
   }
 }
 
-// GET soporta links directos desde emails: /api/email/unsubscribe?email=xxx
+// GET: requiere token firmado HMAC (desde link de emails)
 export async function GET(req: NextRequest) {
-  const email = req.nextUrl.searchParams.get("email");
+  const token = req.nextUrl.searchParams.get("token");
+  if (!token) {
+    return NextResponse.redirect(new URL("/unsubscribe?error=1", req.url));
+  }
+
+  const email = verifyUnsubscribeToken(token);
   if (!email) {
     return NextResponse.redirect(new URL("/unsubscribe?error=1", req.url));
   }
+
   try {
     await updateSubscriberStatus(email, "inactivo");
     return NextResponse.redirect(

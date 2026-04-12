@@ -15,6 +15,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "bcryptjs": "^3.0.3",
     "googleapis": "^171.4.0",
+    "isomorphic-dompurify": "^3.8.0",
     "jsonwebtoken": "^9.0.3",
     "marked": "^18.0.0",
     "mercadopago": "^2.12.0",

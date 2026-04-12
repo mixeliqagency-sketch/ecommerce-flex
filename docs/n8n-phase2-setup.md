@@ -215,3 +215,23 @@ UNSUBSCRIBE_BASE_URL=https://mitienda.vercel.app/api/email/unsubscribe
 - **Flujo winback_60d**: crear un Schedule diario que query Pedidos y busque emails sin compras en 60 dias, y encole `winback_60d` para cada uno.
 - **Email open tracking**: implementar pixel tracking con endpoint `/api/email/track?id=xxx` que actualice `abierto = true` en EmailsLog.
 - **A/B testing de asuntos**: agregar campo `asunto_variant` a eventos y que el flujo elija aleatoriamente.
+
+## Generar unsubscribe token en n8n
+
+El endpoint `GET /api/email/unsubscribe` ahora requiere un token HMAC firmado
+(defensa anti-CSRF: evita que alguien desuscriba a cualquier email conocido).
+Antes de enviar cada email, generar el link con un Function node:
+
+```javascript
+const crypto = require('crypto');
+const secret = $env.NEXTAUTH_SECRET;
+const email = item.json.email.toLowerCase();
+const hmac = crypto.createHmac('sha256', secret).update(email).digest('hex');
+const encoded = Buffer.from(item.json.email).toString('base64url');
+const token = `${encoded}.${hmac}`;
+const unsubscribeUrl = `${$env.BRAND_URL}/api/email/unsubscribe?token=${token}`;
+return { unsubscribeUrl };
+```
+
+Requiere las env vars `NEXTAUTH_SECRET` (mismo valor que el sitio Next.js) y
+`BRAND_URL` (por ejemplo `https://aoura.com.ar`) en n8n.

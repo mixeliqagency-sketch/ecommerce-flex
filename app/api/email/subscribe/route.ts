@@ -15,12 +15,12 @@ export async function POST(req: NextRequest) {
 
     // Suscribir (idempotente) y encolar welcome solo si es nuevo
     try {
-      const subscriber = await addSubscriber(email, source ?? "unknown");
+      const { subscriber, wasCreated } = await addSubscriber(
+        email,
+        source ?? "unknown"
+      );
 
-      // Detectar si es nuevo: fecha creada hace menos de 5 segundos = recien creado
-      const isNew =
-        Math.abs(Date.now() - new Date(subscriber.fecha).getTime()) < 5000;
-      if (isNew) {
+      if (wasCreated) {
         await enqueue("welcome_series_start", {
           email: subscriber.email,
           subscriberId: subscriber.id,

@@ -56,14 +56,17 @@ export async function getSubscriberByEmail(
 export async function addSubscriber(
   email: string,
   source: string
-): Promise<Subscriber> {
+): Promise<{ subscriber: Subscriber; wasCreated: boolean }> {
   const existing = await getSubscriberByEmail(email);
   if (existing) {
     if (existing.estado !== "activo") {
       await updateSubscriberStatus(email, "activo");
-      return { ...existing, estado: "activo" };
+      return {
+        subscriber: { ...existing, estado: "activo" },
+        wasCreated: false,
+      };
     }
-    return existing;
+    return { subscriber: existing, wasCreated: false };
   }
 
   const subscriber: Subscriber = {
@@ -83,7 +86,7 @@ export async function addSubscriber(
     "",
   ]);
 
-  return subscriber;
+  return { subscriber, wasCreated: true };
 }
 
 export async function updateSubscriberStatus(

@@ -5,8 +5,8 @@ import { getAuthSession } from "@/lib/auth";
 import { enqueue } from "@/lib/sheets/queue";
 
 const schema = z.object({
-  asunto: z.string().min(1),
-  contenido: z.string().min(1),
+  asunto: z.string().min(1).max(200),
+  contenido: z.string().min(1).max(40000),
   segmento: z.enum(["todos", "compradores", "sin_compra"]).default("todos"),
 });
 
