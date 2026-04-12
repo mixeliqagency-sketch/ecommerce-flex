@@ -6,7 +6,6 @@ import { validateCheckout } from "@/lib/checkout-validation";
 import { calcEnvio } from "@/lib/utils";
 import { getProductBySlug } from "@/lib/sheets/products";
 import { validateCoupon, incrementCouponUsage } from "@/lib/sheets/coupons";
-import { enqueue } from "@/lib/sheets/queue";
 
 export async function POST(request: Request) {
   try {
@@ -15,11 +14,6 @@ export async function POST(request: Request) {
     if (!result.ok) return result.error;
 
     const { items, nombre, apellido, email, telefono, direccion, ciudad, codigo_postal, coupon_code, referral_code } = result.body;
-
-    // Si vino un codigo de referido, loguearlo — la conversion real se trackea en Phase 3.5
-    if (referral_code) {
-      console.log("[checkout] Orden con referral_code:", referral_code, "- conversion tracking pendiente de Phase 3.5");
-    }
 
     // Validar stock contra la DB antes de crear la orden
     for (const item of items) {
@@ -79,6 +73,7 @@ export async function POST(request: Request) {
       metodo_pago: "mercadopago",
       estado: "pendiente_pago",
       fecha: new Date().toISOString(),
+      referral_code: referral_code || undefined,
     });
 
     // Incrementar uso del cupón (no bloquear el checkout si falla)
@@ -88,15 +83,9 @@ export async function POST(request: Request) {
       });
     }
 
-    // Encolar confirmación inmediata (email de "gracias por tu orden")
-    // Los emails posteriores (tips, review, cross-sell) se encolan cuando el pago se confirma en el webhook
-    await enqueue("post_purchase_confirmation", {
-      orderId: orderId,
-      email,
-    }).catch((err) => {
-      console.error("[checkout] Error encolando post_purchase_confirmation:", err);
-      // No bloquear el checkout por esto
-    });
+    // post_purchase_confirmation se encola desde el webhook de MercadoPago
+    // cuando el pago se confirma (status=approved). Si la encolabamos aca,
+    // los usuarios que nunca pagan recibian "¡Gracias por tu compra!" igual.
 
     // Crear preferencia de pago en MercadoPago
     const mpItems = items.map((i) => ({

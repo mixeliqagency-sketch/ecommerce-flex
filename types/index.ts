@@ -256,6 +256,7 @@ export type QueueEventType =
   | "abandoned_cart_24h"
   | "abandoned_cart_48h"
   | "post_purchase_confirmation"
+  | "post_purchase_pending_transfer"
   | "post_purchase_tips"
   | "post_purchase_review_request"
   | "post_purchase_cross_sell"

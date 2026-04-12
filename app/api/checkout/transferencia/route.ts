@@ -15,11 +15,6 @@ export async function POST(request: Request) {
 
     const { items, nombre, apellido, email, telefono, direccion, ciudad, codigo_postal, coupon_code, referral_code } = result.body;
 
-    // Si vino un codigo de referido, loguearlo — la conversion real se trackea en Phase 3.5
-    if (referral_code) {
-      console.log("[checkout] Orden con referral_code:", referral_code, "- conversion tracking pendiente de Phase 3.5");
-    }
-
     // Validar stock contra la DB antes de crear la orden
     for (const item of items) {
       const product = await getProductBySlug(item.product.slug);
@@ -82,6 +77,7 @@ export async function POST(request: Request) {
       metodo_pago: "transferencia",
       estado: "pendiente_pago",
       fecha: new Date().toISOString(),
+      referral_code: referral_code || undefined,
     });
 
     // Incrementar uso del cupón (no bloquear si falla)
@@ -91,13 +87,17 @@ export async function POST(request: Request) {
       });
     }
 
-    // Encolar confirmación inmediata (email de "gracias por tu orden")
-    // Los emails posteriores (tips, review, cross-sell) se encolan cuando el pago se confirma
-    await enqueue("post_purchase_confirmation", {
+    // Transferencia NO tiene webhook automatico — encolamos un evento
+    // distinto (pending_transfer) para que n8n mande un email con texto
+    // "Recibimos tu pedido, te confirmaremos cuando se acredite el pago"
+    // en lugar de "¡Gracias por tu compra!". La confirmacion final se
+    // encola recien cuando el admin marca la orden como "pagado" en
+    // /api/pedidos/[orderId]/status.
+    await enqueue("post_purchase_pending_transfer", {
       orderId: orderId,
       email,
     }).catch((err) => {
-      console.error("[checkout-transferencia] Error encolando post_purchase_confirmation:", err);
+      console.error("[checkout-transferencia] Error encolando pending_transfer:", err);
       // No bloquear el checkout por esto
     });
 
