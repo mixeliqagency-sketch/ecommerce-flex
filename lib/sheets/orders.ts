@@ -1,10 +1,15 @@
 // lib/sheets/orders.ts
 // Funciones para crear y consultar pedidos en Google Sheets (sheet privada)
 //
-// Layout real de columnas en la hoja "Pedidos" (heredado del monolito):
-// 0: id, 1: fecha, 2: email, 3: telefono, 4: nombre_completo,
-// 5: direccion_completa, 6: items_json (JSON array of CartItem), 7: subtotal, 8: envio,
-// 9: total, 10: metodo_pago, 11: estado, 12: mercadopago_id
+// Layout de columnas en la hoja "Pedidos" — 17 columnas (A..Q):
+// 0: id, 1: fecha, 2: email, 3: telefono, 4: nombre, 5: apellido,
+// 6: direccion, 7: ciudad, 8: codigo_postal, 9: items_json,
+// 10: subtotal, 11: envio, 12: total, 13: metodo_pago, 14: estado,
+// 15: mercadopago_id, 16: referral_code
+//
+// BREAKING CHANGE vs layout legacy (13 cols, nombre/direccion concatenadas):
+// filas viejas quedaran con ciudad/codigo_postal/apellido vacios tras migrar;
+// el admin debe re-ingresar esos campos manualmente desde la Sheet.
 
 import { getRows, findRow, appendRow, findRowIndex, updateCell, colLetter } from "./helpers";
 import { getPrivateSheetId } from "./client";
@@ -28,23 +33,18 @@ function parseItems(raw: string | undefined): CartItem[] {
 }
 
 // Mapea una fila cruda de la hoja Pedidos al tipo Order del dominio.
+// Lee campos separados (sin split de CSV) — ver layout en header del archivo.
 function mapRowToOrder(row: string[]): Order {
-  const nombreCompleto = row[COL.PEDIDO.NOMBRE_COMPLETO] || "";
-  const [nombre, ...restoApellido] = nombreCompleto.split(" ");
-  const direccionCompleta = row[COL.PEDIDO.DIRECCION_COMPLETA] || "";
-  const [direccion = "", ciudad = "", codigo_postal = ""] = direccionCompleta
-    .split(",")
-    .map((s) => s.trim());
   return {
     id: row[COL.PEDIDO.ID] || "",
     fecha: row[COL.PEDIDO.FECHA] || "",
     email: row[COL.PEDIDO.EMAIL] || "",
     telefono: row[COL.PEDIDO.TELEFONO] || "",
-    nombre: nombre || "",
-    apellido: restoApellido.join(" "),
-    direccion,
-    ciudad,
-    codigo_postal,
+    nombre: row[COL.PEDIDO.NOMBRE] || "",
+    apellido: row[COL.PEDIDO.APELLIDO] || "",
+    direccion: row[COL.PEDIDO.DIRECCION] || "",
+    ciudad: row[COL.PEDIDO.CIUDAD] || "",
+    codigo_postal: row[COL.PEDIDO.CODIGO_POSTAL] || "",
     items: parseItems(row[COL.PEDIDO.ITEMS_JSON]),
     subtotal: Number(row[COL.PEDIDO.SUBTOTAL]) || 0,
     envio: Number(row[COL.PEDIDO.ENVIO]) || 0,
@@ -52,28 +52,37 @@ function mapRowToOrder(row: string[]): Order {
     metodo_pago: (row[COL.PEDIDO.METODO_PAGO] || "mercadopago") as Order["metodo_pago"],
     estado: (row[COL.PEDIDO.ESTADO] || "pendiente_pago") as OrderStatus,
     mercadopago_id: row[COL.PEDIDO.MERCADOPAGO_ID] || "",
+    referral_code: row[COL.PEDIDO.REFERRAL_CODE] || undefined,
   };
 }
 
-// Crea un nuevo pedido en la hoja Pedidos
-// Concatena nombre+apellido y serializa los items como JSON
-// para poder reconstruirlos en el dashboard (top_productos, etc.)
+// Crea un nuevo pedido en la hoja Pedidos.
+// IMPORTANTE: guarda cada campo en su propia columna. Nada de concatenar
+// direccion/nombre con comas o espacios (eso rompia cuando el usuario
+// ingresaba "Av. Rivadavia 1234, Dep 2B" o nombres compuestos).
+// Filas legacy con datos concatenados quedaran con ciudad/codigo_postal/
+// apellido vacios: el admin debe re-ingresarlos manualmente.
 export async function createOrder(order: Order): Promise<void> {
-  await appendRow(getPrivateSheetId(), RANGES.PEDIDOS, [
-    order.id,
-    order.fecha,
-    order.email,
-    order.telefono,
-    `${order.nombre} ${order.apellido}`,
-    `${order.direccion}, ${order.ciudad}, ${order.codigo_postal}`,
-    JSON.stringify(order.items),
-    order.subtotal,
-    order.envio,
-    order.total,
-    order.metodo_pago,
-    order.estado,
-    order.mercadopago_id || "",
-  ]);
+  const row: (string | number | boolean)[] = new Array(17).fill("");
+  row[COL.PEDIDO.ID] = order.id;
+  row[COL.PEDIDO.FECHA] = order.fecha;
+  row[COL.PEDIDO.EMAIL] = order.email.toLowerCase().trim();
+  row[COL.PEDIDO.TELEFONO] = order.telefono;
+  row[COL.PEDIDO.NOMBRE] = order.nombre;
+  row[COL.PEDIDO.APELLIDO] = order.apellido;
+  row[COL.PEDIDO.DIRECCION] = order.direccion;
+  row[COL.PEDIDO.CIUDAD] = order.ciudad;
+  row[COL.PEDIDO.CODIGO_POSTAL] = order.codigo_postal;
+  row[COL.PEDIDO.ITEMS_JSON] = JSON.stringify(order.items);
+  row[COL.PEDIDO.SUBTOTAL] = order.subtotal;
+  row[COL.PEDIDO.ENVIO] = order.envio;
+  row[COL.PEDIDO.TOTAL] = order.total;
+  row[COL.PEDIDO.METODO_PAGO] = order.metodo_pago;
+  row[COL.PEDIDO.ESTADO] = order.estado;
+  row[COL.PEDIDO.MERCADOPAGO_ID] = order.mercadopago_id || "";
+  row[COL.PEDIDO.REFERRAL_CODE] = order.referral_code || "";
+
+  await appendRow(getPrivateSheetId(), RANGES.PEDIDOS, row);
 }
 
 // Busca un pedido por su ID único
@@ -82,12 +91,14 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
   return row ? mapRowToOrder(row) : null;
 }
 
-// Devuelve todos los pedidos de un email dado
+// Devuelve todos los pedidos de un email dado (case-insensitive)
 export async function getOrdersByEmail(email: string): Promise<Order[]> {
+  const emailLc = email.toLowerCase().trim();
   const rows = await getRows(getPrivateSheetId(), RANGES.PEDIDOS);
   return rows
-    .filter((r) => r[COL.PEDIDO.EMAIL] === email)
-    .map(mapRowToOrder);
+    .filter((r) => (r[COL.PEDIDO.EMAIL] || "").toLowerCase().trim() === emailLc)
+    .map(mapRowToOrder)
+    .filter((o) => o.id);
 }
 
 /**
@@ -97,7 +108,7 @@ export async function getOrdersByEmail(email: string): Promise<Order[]> {
  */
 export async function getOrdersAll(): Promise<Order[]> {
   const rows = await getRows(getPrivateSheetId(), RANGES.PEDIDOS);
-  return rows.map(mapRowToOrder);
+  return rows.map(mapRowToOrder).filter((o) => o.id);
 }
 
 /**

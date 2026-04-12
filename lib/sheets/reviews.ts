@@ -6,7 +6,7 @@
 //
 // Layout de columnas en "Resenas" según COL.RESENA en constants.ts:
 // 0: id, 1: product_slug, 2: nombre, 3: email, 4: calificacion,
-// 5: titulo, 6: contenido, 7: fecha, 8: verificado, 9: aprobado, 10: destacada
+// 5: titulo, 6: contenido, 7: fecha, 8: aprobado, 9: verificado, 10: destacada
 
 import { getRows, appendRow } from "./helpers";
 import { getPublicSheetId, getPrivateSheetId } from "./client";
@@ -125,6 +125,7 @@ export async function createReview(review: Omit<Review, "id" | "fecha">): Promis
     month: "short",
     year: "numeric",
   });
+  // Orden EXACTO segun COL.RESENA: APROBADO=8, VERIFICADO=9, DESTACADA=10
   await appendRow(getPublicSheetId(), RANGES.RESENAS, [
     id,
     review.product_slug,
@@ -134,8 +135,8 @@ export async function createReview(review: Omit<Review, "id" | "fecha">): Promis
     review.titulo,
     review.contenido,
     fecha,
-    String(review.verificado),
     review.aprobado,
+    String(review.verificado),
     String(review.destacada),
   ]);
 }
@@ -165,12 +166,13 @@ export async function isVerifiedBuyer(
 ): Promise<boolean> {
   const rows = await getRows(getPrivateSheetId(), RANGES.PEDIDOS);
 
+  const emailLc = email.toLowerCase().trim();
   return rows.some((row) => {
-    const orderEmail = row[2]; // columna email en layout de pedidos
-    const itemsJson = row[6] || ""; // columna items_json (JSON array de CartItem)
-    const estado = row[11] || ""; // columna estado
+    const orderEmail = (row[COL.PEDIDO.EMAIL] || "").toLowerCase().trim();
+    const itemsJson = row[COL.PEDIDO.ITEMS_JSON] || "";
+    const estado = row[COL.PEDIDO.ESTADO] || "";
     return (
-      orderEmail === email &&
+      orderEmail === emailLc &&
       isItemMatch(itemsJson, productSlug) &&
       VERIFIED_BUYER_STATES.includes(estado as OrderStatus)
     );

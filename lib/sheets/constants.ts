@@ -4,8 +4,8 @@
 
 export const RANGES = {
   PRODUCTOS: "Productos!A2:S",
-  PEDIDOS: "Pedidos!A2:M",
-  USUARIOS: "Usuarios!A2:E",
+  PEDIDOS: "Pedidos!A2:Q",
+  USUARIOS: "Usuarios!A2:G",
   RESENAS: "Resenas!A2:K",
   PERFILES: "Perfiles!A2:P",
   WEBAUTHN: "WebAuthn!A2:E",
@@ -17,7 +17,7 @@ export const RANGES = {
   SUSCRIPTORES: "Suscriptores!A2:F",
   BLOG: "Blog!A2:J",
   KEYWORDS: "Keywords!A2:E",
-  EMAILS_LOG: "EmailsLog!A2:I",
+  EMAILS_LOG: "EmailsLog!A2:H",
   REFERIDOS: "Referidos!A2:H",
   PUSH_SUBS: "PushSubs!A2:H",
   SOCIAL_LOG: "SocialLog!A2:I",
@@ -45,31 +45,40 @@ export const COL = {
     MOMENTO: 17,
     BENEFICIOS: 18,
   },
-  // Layout real de la hoja Pedidos (heredado del monolito):
-  // 0:id, 1:fecha, 2:email, 3:telefono, 4:nombre_completo, 5:direccion_completa,
-  // 6:items_json (JSON array of CartItem), 7:subtotal, 8:envio, 9:total,
-  // 10:metodo_pago, 11:estado, 12:mercadopago_id
+  // Layout de la hoja Pedidos — campos separados para evitar corrupcion
+  // por split de CSV (direcciones y nombres con comas/espacios).
+  // BREAKING CHANGE vs monolito: pasamos de 13 columnas concatenadas a 17 separadas.
+  // Filas legacy con direccion/nombre concatenados quedarán con campos vacios en
+  // ciudad/codigo_postal/apellido; el admin debe re-ingresarlos manualmente.
   PEDIDO: {
     ID: 0,
     FECHA: 1,
     EMAIL: 2,
     TELEFONO: 3,
-    NOMBRE_COMPLETO: 4,
-    DIRECCION_COMPLETA: 5,
-    ITEMS_JSON: 6,
-    SUBTOTAL: 7,
-    ENVIO: 8,
-    TOTAL: 9,
-    METODO_PAGO: 10,
-    ESTADO: 11,
-    MERCADOPAGO_ID: 12,
+    NOMBRE: 4,
+    APELLIDO: 5,
+    DIRECCION: 6,
+    CIUDAD: 7,
+    CODIGO_POSTAL: 8,
+    ITEMS_JSON: 9,
+    SUBTOTAL: 10,
+    ENVIO: 11,
+    TOTAL: 12,
+    METODO_PAGO: 13,
+    ESTADO: 14,
+    MERCADOPAGO_ID: 15,
+    REFERRAL_CODE: 16,
   },
+  // Layout real hoja "Usuarios": 0:id, 1:email, 2:nombre, 3:apellido,
+  // 4:password_hash, 5:(reservado), 6:fecha_creacion
   USUARIO: {
     ID: 0,
     EMAIL: 1,
     NOMBRE: 2,
-    HASH: 3,
-    APELLIDO: 4,
+    APELLIDO: 3,
+    HASH: 4,
+    RESERVED: 5,
+    FECHA_CREACION: 6,
   },
   RESENA: {
     ID: 0,

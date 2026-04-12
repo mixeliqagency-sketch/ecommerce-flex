@@ -84,6 +84,7 @@ export interface Order {
   estado: OrderStatus;
   fecha: string;
   mercadopago_id?: string;
+  referral_code?: string;
 }
 
 // === ASISTENTE VIRTUAL ===
