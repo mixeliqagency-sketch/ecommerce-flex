@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
+import { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo } from "react";
 import type { AssistantMessage } from "@/types";
 
 interface AssistantContextType {
@@ -43,7 +43,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
 
   const sendMessageInternal = async (text: string) => {
     const userMsg: AssistantMessage = { role: "user", content: text };
-    setMessages((prev) => [...prev, userMsg]);
+    // Limitar a 50 mensajes para evitar que el historial crezca sin control
+    setMessages((prev) => [...prev, userMsg].slice(-50));
     setLoading(true);
 
     try {
@@ -59,21 +60,15 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
 
       if (!res.ok) {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: "Perdon, tuve un problema. Intenta de nuevo o contactanos por WhatsApp." },
-        ]);
+        const errMsg: AssistantMessage = { role: "assistant", content: "Perdon, tuve un problema. Intenta de nuevo o contactanos por WhatsApp." };
+        setMessages((prev) => [...prev, errMsg].slice(-50));
       } else {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: data.reply },
-        ]);
+        const replyMsg: AssistantMessage = { role: "assistant", content: data.reply };
+        setMessages((prev) => [...prev, replyMsg].slice(-50));
       }
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "Error de conexion. Verifica tu internet e intenta de nuevo." },
-      ]);
+      const catchMsg: AssistantMessage = { role: "assistant", content: "Error de conexion. Verifica tu internet e intenta de nuevo." };
+      setMessages((prev) => [...prev, catchMsg].slice(-50));
     } finally {
       setLoading(false);
     }
@@ -85,8 +80,20 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Memoizar el objeto value para evitar re-renders innecesarios en todos los
+  // consumidores del contexto cuando cambia estado no relacionado
+  const value = useMemo(() => ({
+    isOpen,
+    messages,
+    loading,
+    openAssistant,
+    closeAssistant,
+    toggleAssistant,
+    sendMessage,
+  }), [isOpen, messages, loading, openAssistant, closeAssistant, toggleAssistant, sendMessage]);
+
   return (
-    <AssistantContext.Provider value={{ isOpen, messages, loading, openAssistant, closeAssistant, toggleAssistant, sendMessage }}>
+    <AssistantContext.Provider value={value}>
       {children}
     </AssistantContext.Provider>
   );
