@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/context/CartContext";
 import { themeConfig } from "@/theme.config";
 import SearchOverlay from "@/components/tienda/SearchOverlay";
+import { UserIcon } from "@/components/shared/Icons";
 
 const NAV_LINKS = [
   { href: "/productos", label: "Tienda" },
@@ -103,10 +104,7 @@ export default function Header() {
             ) : (
               <>
                 <span className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
+                  <UserIcon className="w-4 h-4" />
                 </span>
               </>
             )}

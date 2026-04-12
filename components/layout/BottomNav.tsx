@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { UserIcon } from "@/components/shared/Icons";
 
 // Tabs: Inicio, Tienda (centro semi-elevado), Cuenta
 const TABS = [
@@ -30,12 +31,7 @@ const TABS = [
   {
     href: "/cuenta",
     label: "Cuenta",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-        <circle cx="12" cy="7" r="4" />
-      </svg>
-    ),
+    icon: <UserIcon className="w-5 h-5" />,
   },
 ];
 
