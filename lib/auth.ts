@@ -101,17 +101,30 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.role = "cliente"; // rol por defecto al hacer login
       }
       // Para usuarios de Google, buscar su ID en Sheets (solo 1ra vez)
       if (!token.id && token.email) {
         const dbUser = await getUserByEmail(token.email);
         if (dbUser) token.id = dbUser.id;
       }
+      // Determinar rol: comparar email contra ADMIN_EMAILS (separados por coma en .env)
+      // Ejemplo: ADMIN_EMAILS=admin@tienda.com,otro@tienda.com
+      if (token.email) {
+        const adminEmails = (process.env.ADMIN_EMAILS || "")
+          .split(",")
+          .map((e) => e.trim())
+          .filter(Boolean);
+        token.role = adminEmails.includes(token.email) ? "admin" : "cliente";
+      }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as { id?: string }).id = token.id as string;
+        (session.user as { id?: string; role?: string }).id = token.id as string;
+        // Pasar el rol a la sesión para que los componentes puedan leerlo
+        (session.user as { id?: string; role?: string }).role =
+          (token.role as string) ?? "cliente";
       }
       return session;
     },

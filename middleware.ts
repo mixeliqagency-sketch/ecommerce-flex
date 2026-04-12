@@ -6,5 +6,6 @@ export const config = {
     "/checkout/:path*",
     "/cuenta/:path*",
     "/tracking/:path*",
+    "/panel/:path*",     // Panel de administración — requiere login Y rol admin
   ],
 };

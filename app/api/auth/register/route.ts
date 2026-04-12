@@ -39,8 +39,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Hashear contraseña
-    const password_hash = await bcrypt.hash(password, 10);
+    // Hashear contraseña — salt rounds 12 (mínimo recomendado por OWASP 2026)
+    const password_hash = await bcrypt.hash(password, 12);
 
     // Guardar usuario en Google Sheets
     await createUser({ email, nombre, apellido, password_hash });
