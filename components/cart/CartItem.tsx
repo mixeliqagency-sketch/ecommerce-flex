@@ -56,7 +56,8 @@ export default function CartItem({ item }: { item: CartItemType }) {
             onClick={() =>
               updateQuantity(item.product.id, item.cantidad - 1, item.variante)
             }
-            className="w-10 h-10 flex items-center justify-center text-text-secondary hover:text-text-primary text-lg font-bold active:scale-90 transition-all"
+            disabled={item.cantidad === 1}
+            className={`w-10 h-10 flex items-center justify-center text-text-secondary hover:text-text-primary text-lg font-bold active:scale-90 transition-all ${item.cantidad === 1 ? "opacity-40 cursor-not-allowed" : ""}`}
             aria-label="Reducir cantidad"
           >
             -

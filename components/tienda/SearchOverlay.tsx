@@ -16,6 +16,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
   const [buscar, setBuscar] = useState("");
   const [resultados, setResultados] = useState<any[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isFirstPathRender = useRef(true);
 
   // Cuando se abre el overlay, focus automatico en el input
   useEffect(() => {
@@ -40,11 +41,17 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     return () => clearTimeout(timeout);
   }, [buscar]);
 
-  // Cerrar overlay y limpiar estado al navegar a otra ruta
+  // Cerrar overlay y limpiar estado al navegar a otra ruta.
+  // Skipea el primer render para no cerrar en el montaje inicial.
   useEffect(() => {
+    if (isFirstPathRender.current) {
+      isFirstPathRender.current = false;
+      return;
+    }
     onClose();
     setBuscar("");
     setResultados([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   // Limpiar estado interno cuando se cierra el overlay desde afuera

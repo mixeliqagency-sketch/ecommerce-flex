@@ -33,6 +33,19 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | null>(null);
 
+// Validador de estructura al leer localStorage (previene bugs con datos corruptos)
+function isValidCartItem(item: unknown): item is CartItem {
+  if (typeof item !== "object" || item === null) return false;
+  const obj = item as Record<string, unknown>;
+  const product = obj.product as Record<string, unknown> | undefined;
+  return (
+    typeof product === "object" &&
+    product !== null &&
+    typeof product.id === "string" &&
+    typeof obj.cantidad === "number"
+  );
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -47,14 +60,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Cargar carrito de localStorage al iniciar
+  // Cargar carrito de localStorage al iniciar — valida estructura antes de usar
   useEffect(() => {
-    const saved = localStorage.getItem("cart");
-    if (saved) {
+    const raw = localStorage.getItem("cart");
+    if (raw) {
       try {
-        setItems(JSON.parse(saved));
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.every(isValidCartItem)) {
+          setItems(parsed as CartItem[]);
+        } else {
+          // Estructura invalida — limpiar para evitar bugs aguas abajo
+          localStorage.removeItem("cart");
+        }
       } catch {
-        // Si el JSON esta corrupto, ignorar
+        localStorage.removeItem("cart");
       }
     }
     setLoaded(true);
