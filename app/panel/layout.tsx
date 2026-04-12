@@ -25,6 +25,8 @@ export default async function PanelLayout({ children }: { children: React.ReactN
             <Link href="/panel/cupones" className="hover:text-[var(--color-primary)] transition">Cupones</Link>
             <Link href="/panel/seo" className="hover:text-[var(--color-primary)] transition">SEO</Link>
             <Link href="/panel/marketing" className="hover:text-[var(--color-primary)] transition">Marketing</Link>
+            <Link href="/panel/redes-sociales" className="hover:text-[var(--color-primary)] transition">Redes</Link>
+            <Link href="/panel/referidos" className="hover:text-[var(--color-primary)] transition">Referidos</Link>
             <Link href="/panel/config" className="hover:text-[var(--color-primary)] transition">Config</Link>
             <Link href="/" className="hover:text-[var(--color-primary)] transition">← Tienda</Link>
           </nav>
