@@ -9,6 +9,11 @@ export const RANGES = {
   RESENAS: "Resenas!A2:K",
   PERFILES: "Perfiles!A2:P",
   WEBAUTHN: "WebAuthn!A2:E",
+  CUPONES: "Cupones!A2:G",
+  CONFIG: "Config!A2:C",
+  METRICAS: "Metricas!A2:F",
+  CARRITOS: "Carritos!A2:E",
+  COLA: "Cola!A2:F",
 } as const;
 
 export const COL = {
@@ -67,6 +72,43 @@ export const COL = {
     APROBADO: 8,
     VERIFICADO: 9,
     DESTACADA: 10,
+  },
+  CUPON: {
+    CODIGO: 0,
+    DESCUENTO: 1,
+    VENCIMIENTO: 2,
+    USOS_MAX: 3,
+    USOS_ACTUALES: 4,
+    ACTIVO: 5,
+    DESCRIPCION: 6,
+  },
+  CONFIG: {
+    MODULO: 0,
+    PROPIEDAD: 1,
+    VALOR: 2,
+  },
+  METRICA: {
+    FECHA: 0,
+    VENTAS: 1,
+    PEDIDOS: 2,
+    VISITAS: 3,
+    CARRITOS_ABANDONADOS: 4,
+    CARRITOS_RECUPERADOS: 5,
+  },
+  CARRITO: {
+    ID: 0,
+    EMAIL: 1,
+    ITEMS: 2,
+    TIMESTAMP: 3,
+    ESTADO: 4,
+  },
+  COLA_EVENTO: {
+    ID: 0,
+    TIPO: 1,
+    DATOS: 2,
+    TIMESTAMP: 3,
+    ESTADO: 4,
+    INTENTOS: 5,
   },
 } as const;
 
