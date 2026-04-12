@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import CategoryPills from "@/components/catalog/CategoryPills";
 import SearchBar from "@/components/catalog/SearchBar";
 import SortSelect from "@/components/catalog/SortSelect";
@@ -10,11 +11,21 @@ import PopularCarousel from "@/components/catalog/PopularCarousel";
 import type { Product } from "@/types";
 
 export default function ProductosPage() {
+  return (
+    <Suspense fallback={<div className="max-w-7xl mx-auto px-4 py-6 text-text-muted">Cargando...</div>}>
+      <ProductosPageInner />
+    </Suspense>
+  );
+}
+
+function ProductosPageInner() {
+  // Inicializar estado directamente desde la URL (sincrono, sin race)
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [categoria, setCategoria] = useState<string>("todos");
-  const [buscar, setBuscar] = useState("");
-  const [orden, setOrden] = useState("relevancia");
+  const [categoria, setCategoria] = useState<string>(() => searchParams.get("categoria") ?? "todos");
+  const [buscar, setBuscar] = useState(() => searchParams.get("buscar") ?? "");
+  const [orden, setOrden] = useState(() => searchParams.get("orden") ?? "relevancia");
 
   // Filtros del sidebar
   const [filterCats, setFilterCats] = useState<string[]>([]);
@@ -48,15 +59,6 @@ export default function ProductosPage() {
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
-
-  // Leer categoria y busqueda de la URL al montar
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const cat = params.get("categoria");
-    if (cat) setCategoria(cat);
-    const q = params.get("buscar");
-    if (q) setBuscar(q);
-  }, []);
 
   // Filtrado local por sidebar (categorias, marcas, precio)
   const filteredProducts = products.filter((p) => {
