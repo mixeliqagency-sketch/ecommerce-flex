@@ -18,6 +18,9 @@ export const RANGES = {
   BLOG: "Blog!A2:J",
   KEYWORDS: "Keywords!A2:E",
   EMAILS_LOG: "EmailsLog!A2:I",
+  REFERIDOS: "Referidos!A2:H",
+  PUSH_SUBS: "PushSubs!A2:H",
+  SOCIAL_LOG: "SocialLog!A2:I",
 } as const;
 
 export const COL = {
@@ -154,6 +157,37 @@ export const COL = {
     ABIERTO: 5,
     FECHA_APERTURA: 6,
     ERROR: 7,
+  },
+  REFERIDO: {
+    ID: 0,
+    USER_EMAIL: 1,
+    CODIGO: 2,
+    FECHA_CREACION: 3,
+    TOTAL_CLICKS: 4,
+    TOTAL_CONVERSIONES: 5,
+    TOTAL_INGRESOS: 6,
+    ACTIVO: 7,
+  },
+  PUSH_SUB: {
+    ID: 0,
+    EMAIL: 1,
+    ENDPOINT: 2,
+    P256DH: 3,
+    AUTH: 4,
+    USER_AGENT: 5,
+    FECHA: 6,
+    ESTADO: 7,
+  },
+  SOCIAL_POST: {
+    ID: 0,
+    PLATFORM: 1,
+    CONTENIDO: 2,
+    IMAGEN_URL: 3,
+    SCHEDULED_FOR: 4,
+    ESTADO: 5,
+    EXTERNAL_ID: 6,
+    FECHA_CREACION: 7,
+    ERROR: 8,
   },
 } as const;
 

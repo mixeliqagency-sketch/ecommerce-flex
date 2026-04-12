@@ -260,7 +260,10 @@ export type QueueEventType =
   | "post_purchase_cross_sell"
   | "winback_60d"
   | "newsletter_send"
-  | "sunset_cleanup";
+  | "sunset_cleanup"
+  | "social_media_publish"
+  | "push_notification_send"
+  | "referral_conversion";
 
 export interface QueueEvent {
   id: string;
@@ -269,4 +272,43 @@ export interface QueueEvent {
   timestamp: string;
   estado: "pendiente" | "procesado" | "fallido";
   intentos: number;
+}
+
+// === PHASE 3: GROWTH ===
+
+export interface ReferralLink {
+  id: string;
+  user_email: string;
+  codigo: string;
+  fecha_creacion: string;
+  total_clicks: number;
+  total_conversiones: number;
+  total_ingresos: number;
+  activo: boolean;
+}
+
+export interface PushSubscriptionRecord {
+  id: string;
+  email: string | null;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  user_agent: string;
+  fecha_suscripcion: string;
+  estado: "activo" | "inactivo";
+}
+
+export type SocialPlatform = "instagram" | "twitter" | "tiktok";
+
+export interface SocialMediaPost {
+  id: string;
+  platform: SocialPlatform;
+  contenido: string;
+  imagen_url?: string;
+  scheduled_for?: string;
+  estado: "pendiente" | "publicado" | "fallido";
+  external_id?: string;
+  fecha_creacion: string;
+  fecha_publicacion?: string;
+  error?: string;
 }
