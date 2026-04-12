@@ -17,10 +17,27 @@ const DELAY_MS = 30 * 1000;
 
 export function PushPermissionPrompt() {
   const [show, setShow] = useState(false);
+  const [disabled, setDisabled] = useState(false);
   const pathname = usePathname();
+
+  // Respetar el toggle pushNotifications del panel/config
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/config")
+      .then((r) => r.json())
+      .then((cfg) => {
+        if (cancelled) return;
+        if (!cfg?.pushNotifications?.enabled) setDisabled(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (disabled) return;
     const shouldSkip =
       pathname?.startsWith("/checkout") ||
       pathname?.startsWith("/auth") ||
@@ -34,7 +51,9 @@ export function PushPermissionPrompt() {
 
     const timer = setTimeout(() => setShow(true), DELAY_MS);
     return () => clearTimeout(timer);
-  }, [pathname]);
+  }, [pathname, disabled]);
+
+  if (disabled) return null;
 
   async function handleAccept() {
     const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;

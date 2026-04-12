@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { getProducts } from "@/lib/sheets/products";
+import { getConfig } from "@/lib/sheets/config";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { INPUT_LIMITS } from "@/lib/validation";
 import { themeConfig } from "@/theme.config";
@@ -17,6 +18,15 @@ export async function POST(request: Request) {
     const rateCheck = checkRateLimit(request, "assistant", RATE_LIMITS.ai);
     if (!rateCheck.allowed) {
       return NextResponse.json({ error: "Demasiadas consultas. Espera un momento." }, { status: 429 });
+    }
+
+    // Respetar el toggle del modulo Kira en /panel/config
+    const config = await getConfig();
+    if (!config.kira.enabled) {
+      return NextResponse.json(
+        { error: "El asistente no está disponible en este momento" },
+        { status: 503 }
+      );
     }
 
     const { messages, query } = await request.json();

@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { themeConfig } from "@/theme.config";
 
@@ -24,6 +27,24 @@ const LEGAL_LINKS = [
 ];
 
 export default function Footer() {
+  // Toggle "Powered by Ecomflex" — se puede apagar desde /panel/config
+  const [showPoweredBy, setShowPoweredBy] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/config")
+      .then((r) => r.json())
+      .then((cfg) => {
+        if (cancelled) return;
+        if (cfg?.poweredBy && cfg.poweredBy.enabled === false) {
+          setShowPoweredBy(false);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <footer className="bg-bg-secondary border-t border-border-glass mt-12 hidden md:block">
       <div className="max-w-7xl mx-auto px-4 py-10">
@@ -129,6 +150,19 @@ export default function Footer() {
           <p className="text-xs text-text-muted text-center">
             &copy; {new Date().getFullYear()} {brand.name}. Todos los derechos reservados.
           </p>
+          {showPoweredBy && (
+            <p className="text-[10px] text-text-muted text-center mt-1 opacity-70">
+              Powered by{" "}
+              <a
+                href="https://github.com/mixeliqagency-sketch"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-accent-emerald transition-colors"
+              >
+                Ecomflex
+              </a>
+            </p>
+          )}
         </div>
       </div>
     </footer>
