@@ -303,7 +303,10 @@ Lo que ve un cliente cuando entra por primera vez.
 
 ### C.4 — Reseñas iniciales (opcional pero recomendado)
 
-- [ ] Llamar al endpoint `GET /api/resenas/seed` una vez para generar reseñas demo
+- [ ] Llamar al endpoint `POST /api/resenas/seed` una vez para generar reseñas demo:
+  ```bash
+  curl -X POST https://TU-DOMINIO/api/resenas/seed -H "Authorization: Bearer $SEED_SECRET"
+  ```
 - [ ] O manualmente agregar 3-5 reseñas reales en el tab `Resenas` (marcando `aprobado = si` y `verificado = true`)
 
 ### C.5 — Blog — primeros 3 artículos

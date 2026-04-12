@@ -53,7 +53,10 @@ export async function POST(
     const refundClient = new PaymentRefund(mpClient);
     await refundClient.create({ payment_id: paymentId });
 
-    await updateOrderStatus(orderId, "reembolsado");
+    // Forzar transición a "reembolsado" aunque VALID_TRANSITIONS no la permita
+    // desde el estado actual (p.ej. "preparando"). El refund en MP ya es irreversible;
+    // el estado local debe reflejarlo para no dejar un pedido activo con plata devuelta.
+    await updateOrderStatus(orderId, "reembolsado", true);
 
     return NextResponse.json({ success: true, manual: false });
   } catch (error) {
