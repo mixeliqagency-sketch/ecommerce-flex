@@ -57,8 +57,11 @@ export async function POST(
 
     return NextResponse.json({ success: true, manual: false });
   } catch (error) {
+    // Log completo solo server-side, cliente recibe mensaje generico
     console.error("[refund]", orderId, error);
-    const message = error instanceof Error ? error.message : "Error al procesar reembolso";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Error al procesar reembolso" },
+      { status: 500 }
+    );
   }
 }
