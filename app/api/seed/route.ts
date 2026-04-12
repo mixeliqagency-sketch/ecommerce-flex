@@ -1,5 +1,23 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import { getSheets, getPublicSheetId } from "@/lib/sheets/client";
+
+// Verifica Authorization: Bearer <SEED_SECRET> con comparacion
+// timing-safe (previene timing attacks). Devuelve true si es valido.
+function checkSeedAuth(request: Request): boolean {
+  const auth = request.headers.get("authorization");
+  const expected = process.env.SEED_SECRET;
+  if (!expected || !auth || !auth.startsWith("Bearer ")) return false;
+  const token = auth.slice("Bearer ".length);
+  try {
+    const a = Buffer.from(token);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
 
 // Productos basados en publicaciones reales de MercadoLibre Argentina (marzo 2026)
 // Fotos directas del CDN de MercadoLibre (http2.mlstatic.com)
@@ -259,14 +277,11 @@ const PRODUCTOS_FICTICIOS = [
   ],
 ];
 
-export async function GET(request: Request) {
-  // Proteccion: en produccion solo se puede ejecutar con token secreto
-  if (process.env.NODE_ENV === "production") {
-    const url = new URL(request.url);
-    const token = url.searchParams.get("token");
-    if (token !== process.env.SEED_SECRET) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    }
+export async function POST(request: Request) {
+  // Proteccion: SIEMPRE requerir SEED_SECRET (incluso en dev).
+  // Genera uno con: openssl rand -hex 32
+  if (!checkSeedAuth(request)) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
   try {
@@ -417,10 +432,10 @@ export async function GET(request: Request) {
       })),
     });
   } catch (error) {
+    // No exponer detalles internos al cliente — logear solo en servidor
     console.error("Seed error:", error);
-    const message = error instanceof Error ? error.message : "Error desconocido";
     return NextResponse.json(
-      { ok: false, error: message },
+      { ok: false, error: "Error al procesar" },
       { status: 500 }
     );
   }

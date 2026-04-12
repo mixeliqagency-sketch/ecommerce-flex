@@ -1,17 +1,29 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import { getProducts } from "@/lib/sheets/products";
 import { getSheets, getPublicSheetId } from "@/lib/sheets/client";
 
-// GET /api/resenas/seed — Crea la hoja "Resenas" y carga resenas iniciales
-// EJECUTAR UNA SOLA VEZ
-export async function GET(request: Request) {
-  // Proteccion: en produccion solo se puede ejecutar con token secreto
-  if (process.env.NODE_ENV === "production") {
-    const url = new URL(request.url);
-    const token = url.searchParams.get("token");
-    if (token !== process.env.SEED_SECRET) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    }
+// Verifica Authorization: Bearer <SEED_SECRET> con comparacion timing-safe.
+function checkSeedAuth(request: Request): boolean {
+  const auth = request.headers.get("authorization");
+  const expected = process.env.SEED_SECRET;
+  if (!expected || !auth || !auth.startsWith("Bearer ")) return false;
+  const token = auth.slice("Bearer ".length);
+  try {
+    const a = Buffer.from(token);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
+// POST /api/resenas/seed — Crea la hoja "Resenas" y carga resenas iniciales
+// EJECUTAR UNA SOLA VEZ. Requiere Authorization: Bearer <SEED_SECRET>
+export async function POST(request: Request) {
+  if (!checkSeedAuth(request)) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
   try {
@@ -187,7 +199,7 @@ export async function GET(request: Request) {
   } catch (err) {
     console.error("Error en seed de resenas:", err);
     return NextResponse.json(
-      { error: "Error al crear resenas seed", detalle: "Error interno" },
+      { error: "Error al procesar" },
       { status: 500 }
     );
   }

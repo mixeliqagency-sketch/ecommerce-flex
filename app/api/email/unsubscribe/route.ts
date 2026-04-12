@@ -2,14 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { updateSubscriberStatus } from "@/lib/sheets/subscribers";
 import { verifyUnsubscribeToken } from "@/lib/unsubscribe-token";
+import { getAuthSession } from "@/lib/auth";
 
 const schema = z.object({
   email: z.string().email(),
 });
 
-// POST: body con email — se usa desde formularios internos autenticados
+// POST: body con email — SOLO admin (herramientas internas).
+// Los usuarios finales deben desuscribirse via GET con token HMAC firmado.
 export async function POST(req: NextRequest) {
   try {
+    const session = await getAuthSession();
+    if (!session || session.user.role !== "admin") {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
     const body = await req.json();
     const { email } = schema.parse(body);
     await updateSubscriberStatus(email, "inactivo");

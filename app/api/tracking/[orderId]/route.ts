@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 import { getOrderById } from "@/lib/sheets/orders";
+import { getAuthSession } from "@/lib/auth";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
+    // Rate limiting — previene enumeracion por fuerza bruta
+    const rateCheck = checkRateLimit(request, "tracking", RATE_LIMITS.general);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: "Demasiados intentos" }, { status: 429 });
+    }
+
     const { orderId } = await params;
 
     if (!orderId) {
@@ -18,10 +26,29 @@ export async function GET(
       return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
     }
 
+    // Admin puede consultar cualquier pedido sin email
+    const session = await getAuthSession();
+    const isAdmin = session?.user?.role === "admin";
+
+    // Extraer email del query param (?email=...)
+    const url = new URL(request.url);
+    const emailParam = url.searchParams.get("email");
+
     const order = await getOrderById(orderId);
 
     if (!order) {
       return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
+    }
+
+    // Sin admin, exigir email matching — previene leak de PII por enumeracion
+    if (!isAdmin) {
+      if (
+        !emailParam ||
+        emailParam.trim().toLowerCase() !== order.email.toLowerCase()
+      ) {
+        // Devolver el mismo error que "no encontrado" para no revelar la existencia del pedido
+        return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
+      }
     }
 
     // Serializar items al formato "nombre xN, nombre xN" que espera la pagina de tracking
