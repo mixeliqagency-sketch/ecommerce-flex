@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     // Generar ID de orden (criptograficamente seguro)
     const orderId = generateOrderId();
 
-    // Guardar orden en Google Sheets como "pendiente"
+    // Guardar orden en Google Sheets como "pendiente_pago"
     await createOrder({
       id: orderId,
       email,
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       envio,
       total,
       metodo_pago: "mercadopago",
-      estado: "pendiente",
+      estado: "pendiente_pago",
       fecha: new Date().toISOString(),
     });
 

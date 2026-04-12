@@ -57,6 +57,16 @@ export interface CartItem {
 }
 
 // === PEDIDOS ===
+export type OrderStatus =
+  | "creado"
+  | "pendiente_pago"
+  | "pagado"
+  | "preparando"
+  | "enviado"
+  | "entregado"
+  | "cancelado"
+  | "reembolsado";
+
 export interface Order {
   id: string;
   email: string;
@@ -71,12 +81,7 @@ export interface Order {
   envio: number;
   total: number;
   metodo_pago: "mercadopago" | "transferencia" | "crypto";
-  estado:
-    | "pendiente"
-    | "confirmado"
-    | "despachado"
-    | "en_camino"
-    | "entregado";
+  estado: OrderStatus;
   fecha: string;
   mercadopago_id?: string;
 }
@@ -97,16 +102,6 @@ export interface User {
 }
 
 // === PHASE 1 ===
-export type OrderStatus =
-  | "creado"
-  | "pendiente_pago"
-  | "pagado"
-  | "preparando"
-  | "enviado"
-  | "entregado"
-  | "cancelado"
-  | "reembolsado";
-
 export interface Coupon {
   codigo: string;
   descuento_porcentaje: number;
@@ -117,6 +112,13 @@ export interface Coupon {
   descripcion?: string;
 }
 
+export interface TopProductMetric {
+  slug: string;
+  nombre: string;
+  cantidad: number;
+  ingresos: number;
+}
+
 export interface DashboardMetrics {
   ventas_hoy: number;
   ventas_semana: number;
@@ -125,7 +127,7 @@ export interface DashboardMetrics {
   pedidos_semana: number;
   visitas_hoy?: number;
   variacion_ventas_pct: number;
-  top_productos: { slug: string; nombre: string; cantidad: number; ingresos: number }[];
+  top_productos: TopProductMetric[];
   carritos_abandonados_hoy: number;
   carritos_recuperados: number;
 }
@@ -138,25 +140,58 @@ export interface AbandonedCart {
   estado: "abandonado" | "recuperado" | "convertido";
 }
 
+export interface EmailMarketingConfig {
+  enabled: boolean;
+  welcomeSeries: boolean;
+  abandonedCart: boolean;
+  postPurchase: boolean;
+  winback: boolean;
+  newsletters: boolean;
+}
+
+export interface SocialMediaConfig {
+  enabled: boolean;
+  instagram: boolean;
+  twitter: boolean;
+  tiktok: boolean;
+}
+
+export interface SeoProConfig {
+  enabled: boolean;
+  blog: boolean;
+  faqSchema: boolean;
+  breadcrumbs: boolean;
+  aiVisibility: boolean;
+}
+
+export interface GoogleAdsConfig {
+  enabled: boolean;
+  trackingId: string;
+  remarketing: boolean;
+}
+
+export interface KiraConfig {
+  enabled: boolean;
+  whatsappFallback: boolean;
+}
+
+// Base para módulos simples con solo on/off
+export interface ToggleModule {
+  enabled: boolean;
+}
+
 export interface ModuleConfig {
-  dashboard: { enabled: boolean };
-  emailMarketing: {
-    enabled: boolean;
-    welcomeSeries: boolean;
-    abandonedCart: boolean;
-    postPurchase: boolean;
-    winback: boolean;
-    newsletters: boolean;
-  };
-  socialMedia: { enabled: boolean; instagram: boolean; twitter: boolean; tiktok: boolean };
-  seoPro: { enabled: boolean; blog: boolean; faqSchema: boolean; breadcrumbs: boolean; aiVisibility: boolean };
-  googleAds: { enabled: boolean; trackingId: string; remarketing: boolean };
-  kira: { enabled: boolean; whatsappFallback: boolean };
-  cupones: { enabled: boolean };
-  referidos: { enabled: boolean };
-  pushNotifications: { enabled: boolean };
-  modoCatalogo: { enabled: boolean };
-  poweredBy: { enabled: boolean };
+  dashboard: ToggleModule;
+  emailMarketing: EmailMarketingConfig;
+  socialMedia: SocialMediaConfig;
+  seoPro: SeoProConfig;
+  googleAds: GoogleAdsConfig;
+  kira: KiraConfig;
+  cupones: ToggleModule;
+  referidos: ToggleModule;
+  pushNotifications: ToggleModule;
+  modoCatalogo: ToggleModule;
+  poweredBy: ToggleModule;
   stockAlert: { threshold: number };
 }
 

@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       envio,
       total: totalConDescuento,
       metodo_pago: "transferencia",
-      estado: "pendiente",
+      estado: "pendiente_pago",
       fecha: new Date().toISOString(),
     });
 

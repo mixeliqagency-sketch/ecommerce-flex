@@ -9,7 +9,7 @@
 import { getRows, findRow, appendRow, findRowIndex, updateCell } from "./helpers";
 import { getPrivateSheetId } from "./client";
 import { RANGES, COL } from "./constants";
-import type { Order } from "@/types";
+import type { Order, OrderStatus } from "@/types";
 
 // Crea un nuevo pedido en la hoja Pedidos
 // Concatena nombre+apellido y formatea los items como texto resumido
@@ -65,7 +65,7 @@ export async function getOrderById(orderId: string): Promise<{
     envio: Number(row[8]) || 0,
     total: Number(row[9]) || 0,
     metodo_pago: row[10] || "",
-    estado: row[11] || "pendiente",
+    estado: (row[11] || "pendiente_pago") as OrderStatus,
   };
 }
 
@@ -84,11 +84,11 @@ export async function getOrdersByEmail(email: string): Promise<{
       fecha: r[1] || "",
       items: r[6] || "",
       total: Number(r[9]) || 0,
-      estado: r[11] || "pendiente",
+      estado: (r[11] || "pendiente_pago") as OrderStatus,
     }));
 }
 
-// Actualiza el estado de un pedido (ej: "pendiente" → "pagado")
+// Actualiza el estado de un pedido (ej: "pendiente_pago" → "pagado")
 // Lanza error si el pedido no existe
 export async function updateOrderStatus(orderId: string, status: string): Promise<void> {
   const rowIndex = await findRowIndex(

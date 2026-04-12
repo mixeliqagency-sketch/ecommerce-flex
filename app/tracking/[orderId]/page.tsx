@@ -10,12 +10,12 @@ import { themeConfig } from "@/theme.config";
 import type { Product } from "@/types";
 
 // Estados posibles del pedido (en orden)
-const ESTADOS = [
-  { key: "pendiente", label: "Confirmado", icon: CheckIcon },
-  { key: "confirmado", label: "Preparando", icon: BoxIcon },
-  { key: "despachado", label: "Despachado", icon: TruckIcon },
-  { key: "en_camino", label: "En camino", icon: MapPinIcon },
-  { key: "entregado", label: "Entregado", icon: HomeIcon },
+const STEPS = [
+  { key: "pendiente_pago", label: "Esperando pago", icon: CheckIcon },
+  { key: "pagado", label: "Pagado", icon: CheckIcon },
+  { key: "preparando", label: "Preparando", icon: BoxIcon },
+  { key: "enviado", label: "Enviado", icon: TruckIcon },
+  { key: "entregado", label: "Entregado", icon: MapPinIcon },
 ];
 
 // Origen fijo (deposito / oficina — Buenos Aires)
@@ -268,24 +268,29 @@ export default function TrackingPage() {
   }, []);
 
   // Indice del estado actual
-  const estadoIndex = data ? ESTADOS.findIndex((e) => e.key === data.estado) : 0;
+  const estadoIndex = data ? STEPS.findIndex((e) => e.key === data.estado) : 0;
   const estadoActual = estadoIndex >= 0 ? estadoIndex : 0;
+  const estadoCancelado = data?.estado === "cancelado" || data?.estado === "reembolsado";
 
   // Tiempo estimado segun estado
   const tiempoEstimado = () => {
     switch (data?.estado) {
-      case "pendiente": return "Preparando tu pedido";
-      case "confirmado": return "Estimado ~60 min";
-      case "despachado": return "Estimado ~45 min";
-      case "en_camino": return "Estimado ~20 min";
+      case "pendiente_pago": return "Esperando pago";
+      case "pagado": return "Pago confirmado";
+      case "preparando": return "Preparando tu pedido";
+      case "enviado": return "En camino";
       case "entregado": return "Entregado";
+      case "cancelado": return "Pedido cancelado";
+      case "reembolsado": return "Pedido reembolsado";
       default: return "Calculando...";
     }
   };
 
   const estadoLabel = () => {
     if (data?.estado === "entregado") return "Entregado";
-    if (data?.estado === "en_camino") return "En camino";
+    if (data?.estado === "enviado") return "En camino";
+    if (data?.estado === "cancelado") return "Cancelado";
+    if (data?.estado === "reembolsado") return "Reembolsado";
     return "En hora";
   };
 
@@ -377,25 +382,35 @@ export default function TrackingPage() {
             <span className="text-white/70 text-xs">{tiempoEstimado()}</span>
           </div>
 
-          {/* Progress bar con iconos */}
-          <div className="relative">
-            <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-accent-emerald rounded-full transition-all duration-700"
-                style={{ width: `${(estadoActual / (ESTADOS.length - 1)) * 100}%` }}
-              />
+          {/* Progress bar con iconos — se oculta si el pedido fue cancelado o reembolsado */}
+          {estadoCancelado ? (
+            <div className="text-center py-2">
+              <p className="text-[11px] text-white/70">
+                {data?.estado === "cancelado"
+                  ? "Este pedido fue cancelado. Si tenes dudas contactanos."
+                  : "Este pedido fue reembolsado."}
+              </p>
             </div>
-            {/* Puntos de estado */}
-            <div className="flex justify-between mt-1.5">
-              {ESTADOS.map((estado, idx) => (
-                <div key={estado.key} className="flex flex-col items-center">
-                  <span className={`text-[8px] ${idx <= estadoActual ? "text-accent-emerald" : "text-white/30"}`}>
-                    {estado.label}
-                  </span>
-                </div>
-              ))}
+          ) : (
+            <div className="relative">
+              <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-accent-emerald rounded-full transition-all duration-700"
+                  style={{ width: `${(estadoActual / (STEPS.length - 1)) * 100}%` }}
+                />
+              </div>
+              {/* Puntos de estado */}
+              <div className="flex justify-between mt-1.5">
+                {STEPS.map((estado, idx) => (
+                  <div key={estado.key} className="flex flex-col items-center">
+                    <span className={`text-[8px] ${idx <= estadoActual ? "text-accent-emerald" : "text-white/30"}`}>
+                      {estado.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -475,7 +490,7 @@ export default function TrackingPage() {
                   ? "bg-accent-emerald/20 text-accent-emerald"
                   : "bg-accent-yellow/20 text-accent-yellow"
               }`}>
-                {ESTADOS[estadoActual]?.label}
+                {STEPS[estadoActual]?.label}
               </span>
             </div>
 
