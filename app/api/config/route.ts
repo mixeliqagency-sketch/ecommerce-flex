@@ -11,6 +11,11 @@ const updateSchema = z.object({
 });
 
 // GET — público: lee config de módulos (para que la tienda sepa qué mostrar)
+//
+// IMPORTANTE: Este endpoint expone TODO el objeto ModuleConfig sin filtrar.
+// NUNCA agregar campos sensibles (API keys, secrets, webhooks privados) al
+// config. Si se necesita config sensible, crear un endpoint separado
+// /api/config/admin con auth check.
 export async function GET() {
   try {
     const config = await getConfig();
