@@ -2,10 +2,7 @@ import { NextResponse } from "next/server";
 import { createOrder } from "@/lib/sheets/orders";
 import { generateOrderId } from "@/lib/validation";
 import { validateCheckout } from "@/lib/checkout-validation";
-import { FREE_SHIPPING_THRESHOLD, FLAT_SHIPPING_COST } from "@/lib/utils";
-
-// Porcentaje de descuento para transferencia bancaria (lo lee del env, default 10%)
-const DESCUENTO_TRANSFERENCIA = Number(process.env.NEXT_PUBLIC_TRANSFER_DISCOUNT ?? 10) / 100;
+import { calcEnvio, calcTransferPrice } from "@/lib/utils";
 
 export async function POST(request: Request) {
   try {
@@ -20,12 +17,11 @@ export async function POST(request: Request) {
       (sum, i) => sum + i.product.precio * i.cantidad,
       0
     );
-    const envioGratis = subtotalOriginal >= FREE_SHIPPING_THRESHOLD;
-    const envio = envioGratis ? 0 : FLAT_SHIPPING_COST;
+    const envio = calcEnvio(subtotalOriginal);
 
     // El descuento se aplica solo al subtotal (no al envio)
-    const descuentoMonto = Math.round(subtotalOriginal * DESCUENTO_TRANSFERENCIA);
-    const subtotalConDescuento = subtotalOriginal - descuentoMonto;
+    const subtotalConDescuento = calcTransferPrice(subtotalOriginal);
+    const descuentoMonto = subtotalOriginal - subtotalConDescuento;
     const totalConDescuento = subtotalConDescuento + envio;
 
     // Generar ID de orden (criptograficamente seguro)

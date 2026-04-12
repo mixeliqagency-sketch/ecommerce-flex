@@ -3,7 +3,7 @@ import { createPreference } from "@/lib/mercadopago";
 import { createOrder } from "@/lib/sheets/orders";
 import { generateOrderId } from "@/lib/validation";
 import { validateCheckout } from "@/lib/checkout-validation";
-import { FREE_SHIPPING_THRESHOLD, FLAT_SHIPPING_COST } from "@/lib/utils";
+import { calcEnvio } from "@/lib/utils";
 
 export async function POST(request: Request) {
   try {
@@ -18,8 +18,7 @@ export async function POST(request: Request) {
       (sum, i) => sum + i.product.precio * i.cantidad,
       0
     );
-    const envioGratis = subtotal >= FREE_SHIPPING_THRESHOLD;
-    const envio = envioGratis ? 0 : FLAT_SHIPPING_COST;
+    const envio = calcEnvio(subtotal);
     const total = subtotal + envio;
 
     // Generar ID de orden (criptograficamente seguro)

@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { formatPrice, calcDiscount, calcInstallments, getBadgeClasses } from "@/lib/utils";
+import { formatPrice, calcDiscount, calcInstallments, getBadgeClasses, calcTransferPrice, TRANSFER_DISCOUNT_PERCENT } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useReviews } from "@/context/ReviewsContext";
 import StarRating from "@/components/reviews/StarRating";
@@ -107,12 +107,12 @@ export default function ProductCard({ product }: ProductCardProps) {
             </span>
             <span className="text-[10px] text-text-muted">con tarjeta</span>
           </div>
-          {/* Precio por transferencia (con 10% OFF) */}
+          {/* Precio por transferencia (con descuento configurable) */}
           <div className="flex items-baseline gap-1.5 flex-wrap">
             <span className="font-heading font-bold text-sm min-[360px]:text-base text-accent-emerald">
-              {formatPrice(Math.round(product.precio * 0.9))}
+              {formatPrice(calcTransferPrice(product.precio))}
             </span>
-            <span className="text-[10px] font-semibold text-accent-orange">10% OFF transferencia</span>
+            <span className="text-[10px] font-semibold text-accent-orange">{TRANSFER_DISCOUNT_PERCENT}% OFF transferencia</span>
           </div>
         </div>
 

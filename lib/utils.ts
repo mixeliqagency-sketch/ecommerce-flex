@@ -43,6 +43,21 @@ export const FREE_SHIPPING_THRESHOLD = themeConfig.currency.envioGratis;
 // Costo fijo de envio cuando no se alcanza el minimo para envio gratis
 export const FLAT_SHIPPING_COST = 5000;
 
+// Descuento por transferencia bancaria (configurable via env var)
+export const TRANSFER_DISCOUNT_PERCENT = Number(
+  process.env.NEXT_PUBLIC_TRANSFER_DISCOUNT ?? 10
+);
+
+// Precio con descuento por transferencia
+export function calcTransferPrice(precio: number): number {
+  return Math.round(precio * (1 - TRANSFER_DISCOUNT_PERCENT / 100));
+}
+
+// Costo de envio segun subtotal
+export function calcEnvio(subtotal: number): number {
+  return subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_COST;
+}
+
 // Armar link de WhatsApp con mensaje pre-cargado
 export function buildWhatsAppLink(phone: string, message: string): string {
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
