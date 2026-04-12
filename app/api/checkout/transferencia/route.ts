@@ -3,6 +3,7 @@ import { createOrder } from "@/lib/sheets/orders";
 import { generateOrderId } from "@/lib/validation";
 import { validateCheckout } from "@/lib/checkout-validation";
 import { calcEnvio, calcTransferPrice } from "@/lib/utils";
+import { getProductBySlug } from "@/lib/sheets/products";
 
 export async function POST(request: Request) {
   try {
@@ -11,6 +12,23 @@ export async function POST(request: Request) {
     if (!result.ok) return result.error;
 
     const { items, nombre, apellido, email, telefono, direccion, ciudad, codigo_postal } = result.body;
+
+    // Validar stock contra la DB antes de crear la orden
+    for (const item of items) {
+      const product = await getProductBySlug(item.product.slug);
+      if (!product) {
+        return NextResponse.json(
+          { error: `Producto ${item.product.slug} no encontrado` },
+          { status: 404 }
+        );
+      }
+      if (product.stock < item.cantidad) {
+        return NextResponse.json(
+          { error: `Stock insuficiente para ${product.nombre}. Disponible: ${product.stock}, solicitado: ${item.cantidad}` },
+          { status: 409 }
+        );
+      }
+    }
 
     // Calcular totales con descuento de transferencia
     const subtotalOriginal = items.reduce(

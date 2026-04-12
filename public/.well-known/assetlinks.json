@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "ar.com.mixeliq.ecomflex",
+      "sha256_cert_fingerprints": ["REEMPLAZAR_CON_FINGERPRINT_DEL_KEYSTORE"]
+    }
+  }
+]

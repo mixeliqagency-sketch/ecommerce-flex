@@ -152,10 +152,13 @@ export default function ProductCard({ product }: ProductCardProps) {
         )}
 
         {product.tipo === "suplemento" && product.stock === 0 && (
-          <div className="flex gap-2 mt-2 items-center">
-            <p className="text-xs text-accent-red font-medium flex-1 text-center">
-              Sin stock
-            </p>
+          <div className="flex gap-2 mt-2">
+            <button
+              disabled
+              className="flex-1 bg-accent-orange text-white text-xs font-semibold py-2 rounded-lg opacity-50 cursor-not-allowed"
+            >
+              Agotado
+            </button>
             {shareButton}
           </div>
         )}
