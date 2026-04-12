@@ -43,7 +43,12 @@ self.addEventListener("fetch", (event) => {
         return fetch(event.request).then((response) => {
           if (response.status === 200) {
             const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
+            caches.open(CACHE_NAME).then(async (cache) => {
+              // Limitar cache a 100 entries — eliminar la mas vieja si se supera
+              const keys = await cache.keys();
+              if (keys.length > 100) {
+                await cache.delete(keys[0]);
+              }
               cache.put(event.request, clone);
             });
           }
@@ -61,7 +66,12 @@ self.addEventListener("fetch", (event) => {
         // Cachear la respuesta exitosa
         if (response.status === 200) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
+          caches.open(CACHE_NAME).then(async (cache) => {
+            // Limitar cache a 100 entries — eliminar la mas vieja si se supera
+            const keys = await cache.keys();
+            if (keys.length > 100) {
+              await cache.delete(keys[0]);
+            }
             cache.put(event.request, clone);
           });
         }
