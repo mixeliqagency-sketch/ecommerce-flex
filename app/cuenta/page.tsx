@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { ReferralSection } from "@/components/tienda/ReferralSection";
 
 export default function CuentaPage() {
   const { data: session, status } = useSession();
@@ -139,6 +140,9 @@ export default function CuentaPage() {
           </div>
         </div>
       </div>
+
+      {/* Referidos */}
+      <ReferralSection />
 
       {/* Cerrar sesion */}
       <button

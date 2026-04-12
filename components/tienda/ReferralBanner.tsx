@@ -23,11 +23,10 @@ export function ReferralBanner() {
   return (
     <div className="bg-[var(--color-primary)]/10 border-b border-[var(--color-primary)]/20 px-4 py-2 text-center text-sm">
       <span className="text-[var(--text-primary)]">
-        Llegaste con un link de amigo — 10% OFF en tu primera compra con el
-        codigo{" "}
+        Llegaste con el link de un amigo. Gracias por visitarnos{" "}
       </span>
-      <span className="font-mono font-bold text-[var(--color-primary)]">
-        {code}
+      <span className="font-mono text-xs text-[var(--color-primary)]">
+        ({code})
       </span>
     </div>
   );

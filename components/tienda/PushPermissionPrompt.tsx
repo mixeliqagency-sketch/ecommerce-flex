@@ -5,6 +5,7 @@
 // rechazo antes y todavia no otorgo/denegó el permiso.
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   isPushSupported,
   getPushPermission,
@@ -16,9 +17,16 @@ const DELAY_MS = 30 * 1000;
 
 export function PushPermissionPrompt() {
   const [show, setShow] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const shouldSkip =
+      pathname?.startsWith("/checkout") ||
+      pathname?.startsWith("/auth") ||
+      pathname?.startsWith("/cuenta") ||
+      pathname?.startsWith("/tracking");
+    if (shouldSkip) return;
     if (!isPushSupported()) return;
     if (localStorage.getItem(STORAGE_KEY) === "true") return;
     const perm = getPushPermission();
@@ -26,7 +34,7 @@ export function PushPermissionPrompt() {
 
     const timer = setTimeout(() => setShow(true), DELAY_MS);
     return () => clearTimeout(timer);
-  }, []);
+  }, [pathname]);
 
   async function handleAccept() {
     const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;

@@ -37,7 +37,7 @@ export function captureReferralFromUrl(): void {
     fetch("/api/referidos/track", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ codigo: code }),
     }).catch((err) => {
       console.warn("[referral-tracking] Error reportando visita:", err);
     });
