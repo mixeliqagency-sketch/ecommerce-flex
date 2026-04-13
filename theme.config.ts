@@ -1,83 +1,86 @@
 // ============================================================
-// CONFIGURACION DEL TEMA — Edita este archivo para personalizar tu tienda
+// CONFIGURACION DEL TEMA — ANDAX (tienda #1 sobre plataforma Ecomflex)
 // ============================================================
-// Este es el UNICO archivo que necesitas cambiar para tener tu propia tienda.
-// Cambia los valores abajo y toda la app se adapta automaticamente.
+// Este archivo viste a Ecomflex como ANDAX. Cambia los valores para
+// transformar la tienda sin tocar el codigo. Pablo puede crear otras
+// marcas en el futuro simplemente clonando este archivo y cambiando
+// los valores — el codigo de Ecomflex queda intacto.
+//
+// Brand kit completo: docs/andax-brand-kit.md
 
 export const themeConfig = {
   // === MARCA ===
   brand: {
-    name: "MiTienda",                          // Nombre de tu marca
-    tagline: "Tu tienda online de confianza",   // Slogan corto
-    description: "Compra los mejores productos online con envio a todo el pais. Ofertas, calidad y atencion personalizada.",
-    url: "https://mititienda.vercel.app",       // URL de produccion
-    logo: "/logo.svg",                          // Ruta al logo en /public/
-    useLogo: false,                             // true = mostrar imagen, false = mostrar texto con tipografia
+    name: "ANDAX",
+    tagline: "Anda con todo",
+    description: "Suplementos premium argentinos para que andes con todo todos los dias. Creatina, magnesio, colageno, multivitaminicos y mas. Envios a todo el pais en 48h. RNPA oficial.",
+    url: "https://andax.com.ar",                 // Pablo registra el dominio en nic.ar
+    logo: "/andax-logo.svg",                      // Pablo sube el SVG a /public/
+    useLogo: false,                               // false = muestra texto con Bricolage. Cambiar a true cuando haya SVG real.
     creator: "Mixeliq",
   },
 
   // === ESTILOS VISUALES ===
-  // Cambia estos valores para transformar completamente el look & feel.
   styles: {
-    // Tipografias (Google Fonts) — se cargan automaticamente
+    // Tipografias — elegidas para evitar defaults over-used (Inter, Roboto, Montserrat)
+    // Bricolage Grotesque: variable, expresiva, con movimiento — matchea con "Anda"
+    // Plus Jakarta Sans: clean, moderna, excelente legibilidad
     fonts: {
-      heading: "Space Grotesk",    // Titulos (ej: "Playfair Display", "Poppins", "Montserrat")
-      body: "Inter",               // Texto general (ej: "Open Sans", "Roboto", "Lato")
+      heading: "Bricolage Grotesque",
+      body: "Plus Jakarta Sans",
     },
 
-    // Bordes redondeados
+    // Bordes redondeados — suficientes para sentir modernidad sin caer en "balloon design"
     borderRadius: {
-      card: "16px",                // Cards de producto, secciones
-      button: "12px",              // Botones
-      pill: "100px",               // Pills de categoria, badges
+      card: "16px",
+      button: "12px",
+      pill: "100px",
     },
 
-    // Borde decorativo del header/nav (color champagne dorado)
-    // Cambialo a "transparent" para quitarlo, o a cualquier color
-    decorativeBorder: "#C9A96E",
+    // Borde decorativo del header — coral con alpha para que no grite
+    decorativeBorder: "#FF6B35",
 
-    // Colores principales
+    // Colores principales (HEX aproximado de valores OKLCH — ver brand kit)
     colors: {
-      // Color principal — botones, links activos, badges, CTA
-      primary: "#10B981",
-      // Version hover del primario (un poco mas claro o mas oscuro)
-      primaryHover: "#059669",
+      // Coral vibrante — energia, movimiento, calor argentino
+      primary: "#FF6B35",
+      primaryHover: "#E85A2A",
 
-      // Color secundario — ofertas, descuentos, alertas
-      secondary: "#F59E0B",
+      // Ocre calido — acento secundario, warnings, stock bajo
+      secondary: "#F5C842",
 
-      // Color de acento — informacion, links secundarios
-      accent: "#3B82F6",
+      // Midnight navy — confianza, seriedad, contraste con el primary
+      accent: "#0F1320",
 
-      // Color de peligro/error — stock bajo, errores, cerrar sesion
-      danger: "#EF4444",
+      // Rojo calido desaturado — errores, sin stock
+      danger: "#E53935",
 
-      // Color de exito — confirmaciones, badges verificados
-      success: "#34D399",
+      // Verde desaturado — confirmaciones, stock OK, pago exitoso
+      success: "#3ECB7A",
     },
 
-    // Tema oscuro (default)
+    // Tema oscuro (default) — navy con texto off-white
     dark: {
-      bgPrimary: "#0A0A0B",          // Fondo principal
-      bgSecondary: "#141416",        // Fondo secundario (footer, nav, sidebars)
-      bgCard: "#1C1C1F",            // Fondo de cards
-      bgGlass: "rgba(255,255,255,0.04)",  // Fondo glass/blur
-      borderGlass: "rgba(255,255,255,0.08)", // Bordes sutiles
-      textPrimary: "#FFFFFF",        // Texto principal
-      textSecondary: "#9CA3AF",      // Texto secundario
-      textMuted: "#6B7280",          // Texto muy sutil
+      bgPrimary: "#0F1320",            // Navy profundo, NO negro puro
+      bgSecondary: "#181D2E",
+      bgCard: "#232938",
+      bgGlass: "rgba(255,255,255,0.04)",
+      borderGlass: "rgba(255,255,255,0.08)",
+      textPrimary: "#FCFAF8",          // Off-white calido, NO blanco puro
+      textSecondary: "#A8A39C",
+      textMuted: "#706B64",
     },
 
-    // Tema claro
+    // Tema claro — warm-tinted grays (gris con hint de coral)
     light: {
-      bgPrimary: "#FFFFFF",
-      bgSecondary: "#F5F5F5",
+      bgPrimary: "#FCFAF8",            // Off-white calido, NO blanco puro
+      bgSecondary: "#F7F3EF",
       bgCard: "#FFFFFF",
-      bgGlass: "rgba(0,0,0,0.03)",
+      bgGlass: "rgba(0,0,0,0.03)",     // NEGRO con alpha (regla: nunca blanco alpha en light mode)
       borderGlass: "rgba(0,0,0,0.10)",
-      textPrimary: "#111827",
-      textSecondary: "#4B5563",
-      textMuted: "#6B7280",
+      textPrimary: "#241F1B",          // Casi negro pero con hint warm, NO negro puro
+      textSecondary: "#6B6560",
+      textMuted: "#9A938B",
     },
   },
 
@@ -86,8 +89,8 @@ export const themeConfig = {
     { slug: "todos",       nombre: "Todos",       icono: "grid" },
     { slug: "destacados",  nombre: "Destacados",  icono: "star" },
     { slug: "ofertas",     nombre: "Ofertas",     icono: "tag" },
-    { slug: "nuevos",      nombre: "Nuevos",      icono: "sparkles" },
-    { slug: "accesorios",  nombre: "Accesorios",  icono: "box" },
+    { slug: "deportivo",   nombre: "Deportivo",   icono: "sparkles" },
+    { slug: "wellness",    nombre: "Wellness",    icono: "box" },
   ],
 
   // === MONEDA Y PRECIOS ===
@@ -107,10 +110,11 @@ export const themeConfig = {
       enabled: true,
       descuento: 10,
       datos: {
-        titular: "Tu Nombre o Razon Social",
-        cbu: "0000000000000000000000",
-        alias: "MI.TIENDA.ALIAS",
-        banco: "Banco Ejemplo",
+        // PABLO: cambia estos valores por tus datos reales antes de lanzar
+        titular: "A completar",
+        cbu: "A completar",
+        alias: "A completar",
+        banco: "A completar",
       },
     },
     crypto: {
@@ -122,59 +126,69 @@ export const themeConfig = {
 
   // === CONTACTO ===
   contact: {
+    // PABLO: cambia estos por los reales
     whatsapp: "5491100000000",
-    email: "contacto@mitienda.com",
-    instagram: "",
+    email: "contacto@andax.com.ar",
+    instagram: "andax.ar",
     horario: "Lunes a Viernes 9 a 18hs",
   },
 
   // === ASISTENTE VIRTUAL ===
+  // En el Brand Kit se decidio "Andi" como nombre del asistente — diminutivo de ANDAX,
+  // personal, cercano, rioplatense.
   assistant: {
-    name: "Luna",
+    name: "Andi",
     avatar: "/assistant-avatar.jpg",
-    greeting: "Hola! En que te puedo ayudar?",
-    personality: "Amable, profesional y directa. Respuestas cortas y utiles.",
+    greeting: "Hola, soy Andi. Contame que necesitas y te ayudo.",
+    personality: "Cercana, rioplatense, directa. Usa voseo siempre (anda, tenes, podes). Respuestas cortas y accionables. Nunca usa lenguaje medico/clinico ni promete curas. Recomienda productos basandose en lo que el cliente le cuenta, no empuja ventas. Si no sabe algo, lo dice y ofrece contacto por WhatsApp.",
     faq: [
-      { label: "Como hago un pedido?",          message: "Como hago para comprar? Explicame el proceso paso a paso." },
-      { label: "Cuales son los medios de pago?", message: "Que medios de pago aceptan? Tienen cuotas?" },
-      { label: "Como son los envios?",           message: "Como funcionan los envios? Tienen envio gratis?" },
-      { label: "Necesito ayuda con mi pedido",   message: "Tengo un problema con mi pedido, me pueden ayudar?" },
+      { label: "Como hago un pedido?",           message: "Como hago para comprar? Contame el paso a paso." },
+      { label: "Que suplemento me conviene?",    message: "Necesito que me recomiendes un suplemento. Contame cuales hay." },
+      { label: "Medios de pago y cuotas",        message: "Que medios de pago aceptan? Tienen cuotas sin interes?" },
+      { label: "Envios y tiempos",               message: "Como funcionan los envios? Cuanto tardan?" },
+      { label: "Tengo un problema con mi pedido", message: "Tengo un problema con mi pedido, me pueden ayudar?" },
     ],
   },
 
   // === REDES SOCIALES ===
+  // PABLO: completar con los handles reales una vez registrados
   social: {
-    instagram: "",
-    facebook: "",
-    tiktok: "",
-    twitter: "",
+    instagram: "andax.ar",
+    facebook: "andaxoficial",
+    tiktok: "andax.ar",
+    twitter: "andax_ar",
   },
 
   // === SEO ===
   seo: {
     keywords: [
-      "tienda online",
-      "comprar online",
-      "envio a todo el pais",
-      "ofertas",
+      "suplementos argentina",
+      "suplementos deportivos",
+      "creatina monohidrato",
+      "magnesio bisglicinato",
+      "colageno hidrolizado",
+      "multivitaminico argentina",
+      "suplementos online",
+      "envios a todo el pais",
+      "andax",
     ],
     ogImage: "/opengraph-image",
-    themeColor: "#10B981",
+    themeColor: "#FF6B35",
   },
 
   // === HOME PAGE ===
   home: {
     hero: {
-      title: "Los mejores productos",
-      titleHighlight: "al mejor precio",
-      subtitle: "Envios a todo el pais, multiples medios de pago y atencion personalizada.",
+      title: "Anda con todo.",
+      titleHighlight: "Todos los dias.",
+      subtitle: "Suplementos premium para que tu cuerpo rinda al maximo. Energia, descanso, fuerza. Sin vueltas. RNPA oficial y envios a todo el pais en 48 horas.",
       ctaPrimary: { text: "Ver productos", href: "/productos" },
-      ctaSecondary: { text: "Contactanos", href: "/contacto" },
+      ctaSecondary: { text: "Conoce ANDAX", href: "/nosotros" },
     },
     features: [
-      { title: "Envio rapido",     description: "Despacho en 24hs",              icon: "truck" },
-      { title: "Pago seguro",      description: "MercadoPago + transferencia",   icon: "shield" },
-      { title: "Atencion 24/7",    description: "Te respondemos siempre",        icon: "headphones" },
+      { title: "Envio en 48h",          description: "Lo despachamos el mismo dia",           icon: "truck" },
+      { title: "Calidad real",          description: "Productos con RNPA oficial",            icon: "shield" },
+      { title: "12 cuotas sin interes", description: "MercadoPago o transferencia 10% OFF",   icon: "headphones" },
     ],
     showReviews: true,
     showInviteFriends: true,
