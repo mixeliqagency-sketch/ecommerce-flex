@@ -47,16 +47,20 @@ export function PushPermissionPrompt() {
   if (disabled) return null;
 
   async function handleAccept() {
+    // Marcamos dismissed + cerramos el prompt SIEMPRE al clickear Activar.
+    // El user ya tomó una decisión, no tiene sentido dejarlo arriba aunque
+    // la suscripción falle (backend caido, VAPID no configurado, browser
+    // denegó, demo mode sin endpoint, etc). Si no cerramos, el usuario queda
+    // atrapado clickeando en un boton que aparenta no hacer nada.
+    localStorage.setItem(STORAGE_KEY, "true");
+    setShow(false);
+
     const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    if (!vapidKey) {
-      console.error("[push-prompt] NEXT_PUBLIC_VAPID_PUBLIC_KEY no configurado");
-      setShow(false);
-      return;
-    }
-    const ok = await subscribeUserToPush(vapidKey);
-    if (ok) {
-      localStorage.setItem(STORAGE_KEY, "true");
-      setShow(false);
+    if (!vapidKey) return;
+    try {
+      await subscribeUserToPush(vapidKey);
+    } catch {
+      // Errores silenciosos — el prompt ya se cerró y el flag ya guardó.
     }
   }
 
