@@ -35,14 +35,23 @@ export function getSheets(): sheets_v4.Sheets {
   return sheetsClient;
 }
 
+// En DEMO_MODE retornamos un stub string para que el codigo que hace
+// getPublicSheetId() no crashee al bootear. Los modulos de lib/sheets/*.ts
+// ya tienen fallback a demo data antes de llegar a llamar a Sheets en modo demo.
 export function getPublicSheetId(): string {
   const id = process.env.GOOGLE_SHEETS_PUBLIC_ID;
-  if (!id) throw new Error("GOOGLE_SHEETS_PUBLIC_ID es requerido");
+  if (!id) {
+    if (process.env.DEMO_MODE === "true") return "demo-public";
+    throw new Error("GOOGLE_SHEETS_PUBLIC_ID es requerido");
+  }
   return id;
 }
 
 export function getPrivateSheetId(): string {
   const id = process.env.GOOGLE_SHEETS_PRIVATE_ID;
-  if (!id) throw new Error("GOOGLE_SHEETS_PRIVATE_ID es requerido");
+  if (!id) {
+    if (process.env.DEMO_MODE === "true") return "demo-private";
+    throw new Error("GOOGLE_SHEETS_PRIVATE_ID es requerido");
+  }
   return id;
 }

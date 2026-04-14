@@ -11,6 +11,7 @@
 import { getRows, appendRow } from "./helpers";
 import { getPublicSheetId, getPrivateSheetId } from "./client";
 import { RANGES, COL } from "./constants";
+import { isDemoMode, DEMO_REVIEWS } from "@/lib/demo-data";
 import type { Review, ReviewSummary, OrderStatus } from "@/types";
 
 // Estados post-pago que califican a un comprador como "verificado".
@@ -50,6 +51,11 @@ async function getRawReviews(): Promise<string[][]> {
 
 // Devuelve las reseñas aprobadas de un producto dado su slug
 export async function getReviewsByProduct(productSlug: string): Promise<Review[]> {
+  if (isDemoMode()) {
+    return DEMO_REVIEWS.filter(
+      (r) => r.product_slug === productSlug && r.aprobado === "si"
+    );
+  }
   const rows = await getRawReviews();
   return rows
     .filter(
@@ -62,6 +68,9 @@ export async function getReviewsByProduct(productSlug: string): Promise<Review[]
 
 // Devuelve las reseñas destacadas para el carrusel de la home
 export async function getFeaturedReviews(): Promise<Review[]> {
+  if (isDemoMode()) {
+    return DEMO_REVIEWS.filter((r) => r.destacada && r.aprobado === "si");
+  }
   const rows = await getRawReviews();
   return rows
     .filter(
@@ -91,6 +100,25 @@ export async function getReviewSummary(
 
 // Calcula resumenes de todos los productos en una sola lectura (para el listado)
 export async function getAllReviewSummaries(): Promise<Record<string, ReviewSummary>> {
+  if (isDemoMode()) {
+    const result: Record<string, ReviewSummary> = {};
+    const byProduct: Record<string, number[]> = {};
+    for (const r of DEMO_REVIEWS) {
+      if (r.aprobado !== "si") continue;
+      if (!byProduct[r.product_slug]) byProduct[r.product_slug] = [];
+      byProduct[r.product_slug].push(r.calificacion);
+    }
+    for (const [slug, ratings] of Object.entries(byProduct)) {
+      const distribucion: Record<1 | 2 | 3 | 4 | 5, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      for (const r of ratings) {
+        if (r >= 1 && r <= 5) distribucion[r as 1 | 2 | 3 | 4 | 5]++;
+      }
+      const total = ratings.length;
+      const promedio = total > 0 ? ratings.reduce((a, b) => a + b, 0) / total : 0;
+      result[slug] = { promedio: Math.round(promedio * 10) / 10, total, distribucion };
+    }
+    return result;
+  }
   const rows = await getRawReviews();
   if (rows.length === 0) return {};
 

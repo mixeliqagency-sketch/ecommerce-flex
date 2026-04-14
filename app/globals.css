@@ -74,6 +74,45 @@ h1, h2, h3, h4, h5, h6 {
 }
 .animate-fade-in { animation: fade-in 0.3s ease-out; }
 
+/* Manifesto de marca — entradas laterales con micro overshoot cinematico.
+   Usado por components/home/BrandManifesto.tsx. */
+@keyframes manifesto-from-left {
+  0%   { transform: translateX(-100vw); opacity: 0; }
+  15%  { opacity: 1; }
+  70%  { transform: translateX(3%); }
+  85%  { transform: translateX(-1%); }
+  100% { transform: translateX(0); }
+}
+@keyframes manifesto-from-right {
+  0%   { transform: translateX(100vw); opacity: 0; }
+  15%  { opacity: 1; }
+  70%  { transform: translateX(-3%); }
+  85%  { transform: translateX(1%); }
+  100% { transform: translateX(0); }
+}
+/* Finale de la X² del manifesto ANDAX — color shift emerald → orange + giro. */
+@keyframes manifesto-x-color {
+  to {
+    color: var(--color-secondary);
+    text-shadow:
+      0 0 40px rgba(249, 115, 22, 0.6),
+      0 0 90px rgba(249, 115, 22, 0.3);
+  }
+}
+@keyframes manifesto-x-spin {
+  0%   { transform: scale(1) rotate(0deg); }
+  40%  { transform: scale(1.25) rotate(144deg); }
+  70%  { transform: scale(1.35) rotate(252deg);
+         text-shadow: 0 0 70px rgba(249, 115, 22, 1),
+                      0 0 140px rgba(249, 115, 22, 0.7); }
+  100% { transform: scale(1) rotate(360deg); }
+}
+@keyframes manifesto-squared-in {
+  0%   { opacity: 0; transform: scale(0) translateY(15px) rotate(-30deg); }
+  60%  { opacity: 1; transform: scale(1.25) translateY(-2px) rotate(8deg); }
+  100% { opacity: 1; transform: scale(1) translateY(0) rotate(0deg); }
+}
+
 /* Blog post typography */
 .prose-content h1,
 .prose-content h2,

@@ -11,29 +11,20 @@ import {
   getPushPermission,
   subscribeUserToPush,
 } from "@/lib/push-client";
+import { useModuleConfig } from "@/hooks/useModuleConfig";
 
 const STORAGE_KEY = "push_prompt_dismissed";
 const DELAY_MS = 30 * 1000;
 
 export function PushPermissionPrompt() {
   const [show, setShow] = useState(false);
-  const [disabled, setDisabled] = useState(false);
   const pathname = usePathname();
 
-  // Respetar el toggle pushNotifications del panel/config
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/config")
-      .then((r) => r.json())
-      .then((cfg) => {
-        if (cancelled) return;
-        if (!cfg?.pushNotifications?.enabled) setDisabled(true);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // Respetar el toggle "pushNotifications" del panel admin (runtime).
+  // Antes haciamos un fetch local a /api/config, ahora usamos el hook
+  // unificado que cachea el resultado entre componentes y respeta demo mode.
+  const { isEnabled, loaded } = useModuleConfig();
+  const disabled = loaded && !isEnabled("pushNotifications");
 
   useEffect(() => {
     if (typeof window === "undefined") return;

@@ -66,14 +66,29 @@ function ProductosPageInner() {
     if (filterCats.length > 0 && !filterCats.includes(p.categoria)) return false;
     // Filtro por marca
     if (filterBrands.length > 0 && !filterBrands.includes(p.marca)) return false;
-    // Filtro por rango de precio
-    if (p.precio < precioMin || p.precio > precioMax) return false;
+    // Filtro por rango de precio — solo aplicar si el user modifico el rango
+    // (si precioMin == 0 y precioMax == 100000, son los defaults sin tocar y
+    // no deberian filtrar nada)
+    if (precioMin > 0 && p.precio < precioMin) return false;
+    if (precioMax < 100000 && p.precio > precioMax) return false;
     return true;
   });
 
-  // Sidebar de filtros reutilizable (se renderiza en mobile y desktop)
+  // Contador de filtros activos — para badge en el boton "Filtros"
+  // Solo cuentan categorias y marcas seleccionadas; el rango de precio
+  // cuenta como 1 si el user lo modifico.
+  const activeFiltersCount =
+    filterCats.length +
+    filterBrands.length +
+    ((precioMin > 0 || precioMax < 100000) ? 1 : 0);
+  const hasActiveFilters = activeFiltersCount > 0;
+
+  // Sidebar de filtros reutilizable (se renderiza en mobile y desktop).
+  // Le pasamos `products` para que derive categorias/marcas/precios dinamicamente
+  // y nunca se desincronice con los datos reales.
   const filterSidebarEl = (
     <FilterSidebar
+      products={products}
       categorias={filterCats}
       onCategoriasChange={setFilterCats}
       marcas={filterBrands}
@@ -86,7 +101,7 @@ function ProductosPageInner() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-3 min-[400px]:px-4 py-6 pb-24">
+    <div className="max-w-7xl mx-auto px-3 min-[400px]:px-4 pt-6 pb-6">
       {/* Titulo + controles superiores
           En 320px: "Tienda" arriba, controles abajo (flex-col en < sm)
           En sm+: todo en una fila (flex-row) */}
@@ -95,12 +110,17 @@ function ProductosPageInner() {
           Tienda
         </h1>
         <div className="flex items-center gap-2">
-          {/* Boton filtros mobile */}
+          {/* Boton filtros mobile — el borde se ilumina en emerald cuando hay
+              filtros activos (coherente con el focus state del select de orden). */}
           <button
             onClick={() => setShowFilters(!showFilters)}
             aria-expanded={showFilters}
             aria-label={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
-            className="lg:hidden flex items-center gap-2 bg-bg-card border border-border-glass rounded-lg px-3 py-2 text-sm text-text-secondary hover:border-accent-emerald/40 transition-colors"
+            className={`lg:hidden flex items-center gap-2 bg-bg-card rounded-lg px-3 py-2 text-sm transition-colors border ${
+              hasActiveFilters
+                ? "border-accent-emerald text-accent-emerald shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                : "border-border-glass text-text-secondary hover:border-accent-emerald/40"
+            }`}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="4" y1="21" x2="4" y2="14" />
@@ -114,6 +134,11 @@ function ProductosPageInner() {
               <line x1="17" y1="16" x2="23" y2="16" />
             </svg>
             Filtros
+            {hasActiveFilters && (
+              <span className="bg-accent-emerald text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center" aria-label={`${activeFiltersCount} filtros activos`}>
+                {activeFiltersCount}
+              </span>
+            )}
           </button>
           <SortSelect value={orden} onChange={setOrden} />
         </div>

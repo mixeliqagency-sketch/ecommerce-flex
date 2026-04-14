@@ -6,6 +6,12 @@ import { getSheets } from "./client";
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 2000, 4000];
 
+// Safety net para DEMO_MODE: si un modulo no cubierto por demo-data.ts
+// (ej: metrics.ts, carts.ts, orders.ts) llama a getRows/appendRow/updateCell
+// durante el render, devolvemos datos vacios en vez de crashear contra
+// Google Sheets (que no tiene credenciales reales en demo).
+const isDemo = () => process.env.DEMO_MODE === "true";
+
 async function withRetry<T>(fn: () => Promise<T>, context: string): Promise<T> {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -31,6 +37,7 @@ export async function getRows(
   spreadsheetId: string,
   range: string
 ): Promise<string[][]> {
+  if (isDemo()) return [];
   return withRetry(async () => {
     const sheets = getSheets();
     const res = await sheets.spreadsheets.values.get({ spreadsheetId, range });
@@ -87,6 +94,7 @@ export async function appendRow(
   range: string,
   values: (string | number | boolean)[]
 ): Promise<void> {
+  if (isDemo()) return;
   return withRetry(async () => {
     const sheets = getSheets();
     const safeValues = values.map(escapeFormulaInjection);
@@ -104,6 +112,7 @@ export async function updateCell(
   range: string,
   value: string | number
 ): Promise<void> {
+  if (isDemo()) return;
   return withRetry(async () => {
     const sheets = getSheets();
     const safeValue = escapeFormulaInjection(value);

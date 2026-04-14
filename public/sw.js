@@ -1,125 +1,98 @@
 // Service Worker para PWA e-commerce template
-// Estrategia: cache-first para assets estaticos, network-first para paginas
+//
+// 2026-04-13 KILL SWITCH: este SW detecta si hay una version vieja cacheada
+// y la desinstala + limpia todos los caches. La razon es que el SW anterior
+// cacheaba "/" y "/offline" con estrategia cache-first, lo que causaba que
+// el user viera el HTML viejo despues de cambios de codigo en development.
+//
+// Version nueva: cache-first SOLO para assets estaticos con hash en la URL
+// (immutable por definicion), network-first para paginas (HTML/JSON), y
+// nunca cachear /api/*.
 
-const CACHE_NAME = "ecomflex-v2";
+const CACHE_NAME = "ecomflex-v3-kill-switch";
+const MAX_CACHE_ENTRIES = 100;
 
-// Recursos criticos para precachear en install
-const PRECACHE_URLS = ["/", "/offline"];
+// Recursos criticos para precachear en install — SOLO cosas realmente estaticas.
+// NO cacheamos "/" porque cambia con cada deploy y es HTML dinamico.
+const PRECACHE_URLS = ["/offline"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS)),
   );
   self.skipWaiting();
 });
 
+// Handler para mensajes del cliente — recibe SKIP_WAITING desde InstallPrompt
+// cuando detecta una version nueva, asi el activate corre inmediato.
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener("activate", (event) => {
-  // Limpiar caches viejos
+  // CRITICO: limpiar TODOS los caches viejos (incluye ecomflex-v2 y anteriores)
+  // para que el user no vea HTML stale. Al activar la nueva version, los caches
+  // viejos se borran enteros.
   event.waitUntil(
     caches
       .keys()
       .then((keys) =>
         Promise.all(
-          keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
-        )
+          keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)),
+        ),
       )
-      .then(() => self.clients.claim())
+      .then(() => self.clients.claim()),
   );
 });
 
 self.addEventListener("fetch", (event) => {
-  // Solo cachear requests GET
-  if (event.request.method !== "GET") return;
+  const { request } = event;
 
-  // No cachear requests a APIs
-  const url = new URL(event.request.url);
-  if (url.pathname.startsWith("/api/")) return;
+  // NUNCA cachear:
+  // - /api/* (data dinamica, no se puede cachear)
+  // - Requests non-GET (POST, PUT, DELETE)
+  // - Requests con query params (se consideran dinamicos)
+  // - Paginas HTML en navegacion (son dinamicas y pueden cambiar)
+  const url = new URL(request.url);
+  const isAPI = url.pathname.startsWith("/api/");
+  const isNotGet = request.method !== "GET";
+  const isHTML = request.mode === "navigate" || request.headers.get("accept")?.includes("text/html");
 
-  // Cache-first para assets estaticos de Next.js (JS, CSS, imagenes compiladas)
-  if (url.pathname.startsWith("/_next/static/")) {
+  if (isAPI || isNotGet || isHTML) {
+    // Network-first: pedimos al server siempre. Si falla (offline), fallback
+    // al cache, y si eso tambien falla, devolvemos /offline.
     event.respondWith(
-      caches.match(event.request).then((cached) => {
-        if (cached) return cached;
-        return fetch(event.request).then((response) => {
-          if (response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then(async (cache) => {
-              // Limitar cache a 100 entries — eliminar la mas vieja si se supera
-              const keys = await cache.keys();
-              if (keys.length > 100) {
-                await cache.delete(keys[0]);
-              }
-              cache.put(event.request, clone);
-            });
-          }
-          return response;
-        });
-      })
+      fetch(request).catch(() =>
+        caches.match(request).then((cached) => cached || caches.match("/offline")),
+      ),
     );
     return;
   }
 
-  // Network-first para el resto (paginas, datos dinamicos)
+  // Assets estaticos (_next/static/*, /icon-*.png, /fonts/*, etc.):
+  // cache-first porque son inmutables (tienen hash en el nombre o raramente cambian).
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Cachear la respuesta exitosa
-        if (response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(async (cache) => {
-            // Limitar cache a 100 entries — eliminar la mas vieja si se supera
-            const keys = await cache.keys();
-            if (keys.length > 100) {
-              await cache.delete(keys[0]);
-            }
-            cache.put(event.request, clone);
-          });
-        }
-        return response;
-      })
-      .catch(() => {
-        // Si falla la red, intentar cache
-        return caches.match(event.request).then((cached) => {
-          if (cached) return cached;
-          // Fallback offline cuando no hay cache ni red
-          if (event.request.mode === "navigate") {
-            return caches.match("/offline");
+    caches.match(request).then(
+      (cached) =>
+        cached ||
+        fetch(request).then((response) => {
+          if (!response || response.status !== 200 || response.type !== "basic") {
+            return response;
           }
-          return new Response("Offline", {
-            status: 503,
-            statusText: "Service Unavailable",
-            headers: { "Content-Type": "text/plain" },
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, clone);
+            // Limitar el tamano del cache a MAX_CACHE_ENTRIES
+            cache.keys().then((keys) => {
+              if (keys.length > MAX_CACHE_ENTRIES) {
+                cache.delete(keys[0]);
+              }
+            });
           });
-        });
-      })
+          return response;
+        }),
+    ),
   );
-});
-
-// === Push notifications (Phase 3) ===
-
-self.addEventListener("push", (event) => {
-  if (!event.data) return;
-
-  let payload;
-  try {
-    payload = event.data.json();
-  } catch {
-    payload = { title: "Notificacion", body: event.data.text() };
-  }
-
-  const title = payload.title || "Ecomflex";
-  const options = {
-    body: payload.body || "",
-    icon: "/icon-192.png",
-    badge: "/icon-192.png",
-    data: { url: payload.url || "/" },
-  };
-
-  event.waitUntil(self.registration.showNotification(title, options));
-});
-
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  const url = event.notification.data?.url || "/";
-  event.waitUntil(clients.openWindow(url));
 });

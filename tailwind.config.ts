@@ -26,14 +26,19 @@ const config: Config = {
           secondary: "var(--text-secondary)",
           muted: "var(--text-muted)",
         },
-        // Colores de acento — leidos de CSS variables para cambio dinamico
+        // Colores de acento — portados de AOURA v1 (hex directo, no CSS vars).
+        // La razon: antes accent-emerald mapeaba a var(--color-primary) y si
+        // una marca nueva cambiaba primary, "emerald" dejaba de ser verde y
+        // los checkmarks/onlines se veian del color del brand. Ahora los
+        // nombres semanticos son estables; los colores de marca viven en
+        // var(--color-primary)/secondary/accent en theme-css.ts.
         accent: {
-          emerald: "var(--color-primary)",
-          orange: "var(--color-secondary)",
-          blue: "var(--color-accent)",
-          red: "var(--color-danger)",
-          yellow: "var(--color-secondary)",
-          success: "var(--color-success)",
+          emerald: "#10B981",   // verde AOURA — identidad + success + online
+          orange: "#F97316",    // naranja AOURA — urgencia, ofertas, stock bajo
+          blue: "#3B82F6",      // azul AOURA — info, links institucionales
+          red: "#EF4444",       // rojo AOURA — error, sin stock, peligro
+          yellow: "#FBBF24",    // amarillo AOURA — warnings, crypto, reviews
+          success: "#34D399",   // verde claro AOURA — confirmaciones
         },
       },
       fontFamily: {

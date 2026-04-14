@@ -9,7 +9,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "setup": "node scripts/setup.mjs"
   },
   "dependencies": {
     "@types/jsonwebtoken": "^9.0.10",

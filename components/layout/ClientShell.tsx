@@ -60,7 +60,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
             <ReferralBanner />
             <TopBar />
             <Header />
-            <main className="min-h-[calc(100vh-7rem)] pb-16 md:pb-0">{children}</main>
+            <main className="min-h-[calc(100vh-7rem)]">{children}</main>
             <Footer />
             <BottomNav />
             <ShopAssistant />

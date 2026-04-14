@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAssistant } from "@/context/AssistantContext";
 import { buildWhatsAppLink } from "@/lib/utils";
 import { themeConfig } from "@/theme.config";
+import { useModuleConfig } from "@/hooks/useModuleConfig";
 
 const { assistant, contact, brand } = themeConfig;
 
@@ -54,6 +55,10 @@ export default function ShopAssistant() {
   const [view, setView] = useState<PanelView>("home");
   const [searchInput, setSearchInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  // Respetar el toggle "kira.enabled" del panel admin. Si el admin apaga
+  // la asistente, no montamos el boton flotante ni el panel.
+  const { isEnabled, loaded } = useModuleConfig();
+  const kiraEnabled = isEnabled("kira");
 
   useEffect(() => {
     if (view === "chat") {
@@ -100,6 +105,10 @@ export default function ShopAssistant() {
     setView("home");
   };
 
+  // Si el admin apago Kira en /panel/config, no renderizar nada.
+  // Esperamos que el config este loaded para evitar flicker del boton.
+  if (loaded && !kiraEnabled) return null;
+
   return (
     <>
       {/* Panel desplegable */}
@@ -122,8 +131,8 @@ export default function ShopAssistant() {
                     </div>
                     <div>
                       <p className="font-heading font-bold text-sm text-text-primary">{assistant.name}</p>
-                      <p className="text-[10px] text-accent-emerald flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-accent-emerald inline-block" />
+                      <p className="text-[10px] text-accent-success flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent-success inline-block" />
                         Online
                       </p>
                     </div>
@@ -318,11 +327,14 @@ export default function ShopAssistant() {
               <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-accent-emerald/40">
                 <AssistantAvatar size={40} />
               </div>
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-accent-emerald rounded-full border-2 border-bg-card" />
+              {/* Status dot debe ser VERDE SUCCESS, no accent-emerald (que en ANDAX
+                  mapea al primary coral #FF6B35 via var(--color-primary)). Usamos
+                  bg-accent-success que lee de --color-success (verde real #3ECB7A). */}
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-accent-success rounded-full border-2 border-bg-card" />
             </div>
             <div className="flex flex-col items-start leading-tight">
               <span className="text-sm font-bold text-text-primary">{assistant.name}</span>
-              <span className="text-[10px] text-accent-emerald">Online</span>
+              <span className="text-[10px] text-accent-success">Online</span>
             </div>
           </>
         )}

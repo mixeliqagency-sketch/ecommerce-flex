@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Inter } from "next/font/google";
 import ClientShell from "@/components/layout/ClientShell";
 import JsonLd from "@/components/seo/JsonLd";
+import AnalyticsScripts from "@/components/seo/AnalyticsScripts";
 import { themeConfig } from "@/theme.config";
 import { getThemeCSS } from "@/lib/theme-css";
 import "./globals.css";
@@ -34,7 +35,8 @@ export const metadata: Metadata = {
   },
   description: brand.description,
   keywords: [...seo.keywords],
-  manifest: "/manifest.json",
+  // Manifest generado dinamicamente por app/manifest.ts (lee de themeConfig.install)
+  manifest: "/manifest.webmanifest",
   themeColor: seo.themeColor,
   icons: {
     icon: [
@@ -77,8 +79,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" className={fontClasses} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        {/* Variables CSS generadas desde theme.config.ts en build-time (contenido estatico, no user input) */}
-        <style>{THEME_STYLE}</style>
+        {/* THEME_STYLE es generado en build-time desde theme.config.ts (no hay
+            user input — no hay riesgo XSS). Usamos inyeccion HTML directa porque
+            el CSS contiene comillas dobles (ej [data-theme="light"]) que React
+            escaparia como &quot; en SSR, rompiendo la hidratacion. */}
+        <style dangerouslySetInnerHTML={{ __html: THEME_STYLE }} />
+        {/* SW KILL SWITCH (2026-04-13): corre ANTES que cualquier otro JS.
+            Detecta si hay un SW viejo controlando la pagina, lo desregistra,
+            limpia todos los caches y hace un reload unico. Sin esto, el SW
+            viejo sigue sirviendo HTML/JS stale con estado roto (ReviewCarousel
+            stuck, ProductGrid stuck, Anda sin abrir). El flag en sessionStorage
+            evita loop de reload. Se puede borrar este bloque en ~2 semanas
+            cuando todos los browsers hayan migrado a la nueva version. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{if(sessionStorage.getItem('sw-killed-v3'))return;if(!('serviceWorker' in navigator))return;navigator.serviceWorker.getRegistrations().then(function(regs){if(regs.length===0){sessionStorage.setItem('sw-killed-v3','1');return;}Promise.all(regs.map(function(r){return r.unregister();})).then(function(){if('caches' in window){caches.keys().then(function(keys){return Promise.all(keys.map(function(k){return caches.delete(k);}));}).then(function(){sessionStorage.setItem('sw-killed-v3','1');location.reload();});}else{sessionStorage.setItem('sw-killed-v3','1');location.reload();}});});}catch(e){}})();`,
+          }}
+        />
       </head>
       <body className="min-h-screen bg-bg-primary text-text-primary font-body" suppressHydrationWarning>
         <JsonLd data={{
@@ -103,6 +120,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           },
         }} />
         <ClientShell>{children}</ClientShell>
+        {/* Scripts de tracking opt-in — solo cargan si hay IDs en themeConfig.analytics */}
+        <AnalyticsScripts />
       </body>
     </html>
   );

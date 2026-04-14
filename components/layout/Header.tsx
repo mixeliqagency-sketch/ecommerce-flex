@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useIsAuthenticated } from "@/hooks/useIsAuthenticated";
 import { useCart } from "@/context/CartContext";
 import { themeConfig } from "@/theme.config";
 import SearchOverlay from "@/components/tienda/SearchOverlay";
 import { UserIcon } from "@/components/shared/Icons";
+import BrandWordmark from "@/components/layout/BrandWordmark";
 
 const NAV_LINKS = [
   { href: "/productos", label: "Tienda" },
@@ -15,7 +16,10 @@ const NAV_LINKS = [
 
 export default function Header() {
   const { openCart, totalItems } = useCart();
-  const { data: session } = useSession();
+  // Hook unificado: en prod devuelve NextAuth, en DEMO_MODE lee la session fake
+  // de localStorage. Sin esto, el boton de perfil no sabe que el user logueo
+  // por Google en demo y lo manda devuelta a /auth/login en loop.
+  const { authenticated: session } = useIsAuthenticated();
   const router = useRouter();
   const pathname = usePathname();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -44,7 +48,7 @@ export default function Header() {
             {themeConfig.brand.useLogo ? (
               <img src={themeConfig.brand.logo} alt={themeConfig.brand.name} className="h-8 min-[400px]:h-10" />
             ) : (
-              <span className="text-accent-emerald text-xl min-[400px]:text-2xl tracking-wider font-bold" style={{ fontFamily: "var(--font-heading)" }}>{themeConfig.brand.name}</span>
+              <BrandWordmark className="text-xl min-[400px]:text-2xl" />
             )}
           </Link>
 
@@ -71,22 +75,26 @@ export default function Header() {
           {/* Grupo de iconos: lupa + perfil + carrito — gap uniforme */}
           <div className="flex items-center gap-1">
 
-          {/* Lupa — abre el buscador */}
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="w-10 h-10 flex items-center justify-center text-text-secondary hover:text-accent-emerald transition-colors flex-shrink-0"
-            aria-label="Buscar productos"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <path d="M21 21l-4.35-4.35" />
-            </svg>
-          </button>
+          {/* Lupa — abre el buscador. Oculta en /productos y /productos/[slug]
+              porque la tienda tiene su propio buscador principal mas prominente
+              (evita duplicar funcionalidad y confundir al usuario). */}
+          {!pathname.startsWith("/productos") && (
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="w-11 h-11 flex items-center justify-center text-text-secondary hover:text-accent-emerald transition-colors flex-shrink-0"
+              aria-label="Buscar productos"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+            </button>
+          )}
 
           {/* Usuario */}
           <Link
             href={session ? "/cuenta" : "/auth/login"}
-            className="w-10 h-10 flex items-center justify-center text-text-primary hover:text-accent-emerald transition-colors flex-shrink-0"
+            className="w-11 h-11 flex items-center justify-center text-text-primary hover:text-accent-emerald transition-colors flex-shrink-0"
             aria-label={session ? "Mi cuenta" : "Iniciar sesion"}
           >
             {session ? (
@@ -96,7 +104,7 @@ export default function Header() {
                 ) : (
                   <span className="w-8 h-8 rounded-full bg-accent-emerald/30 border border-accent-emerald/50 flex items-center justify-center">
                     <span className="text-accent-emerald text-sm font-bold">
-                      {session.user?.name?.charAt(0)?.toUpperCase() || "U"}
+                      U
                     </span>
                   </span>
                 )}
@@ -113,7 +121,7 @@ export default function Header() {
           {/* Carrito */}
           <button
             onClick={openCart}
-            className="w-10 h-10 flex items-center justify-center relative text-text-primary hover:text-accent-emerald transition-colors flex-shrink-0"
+            className="w-11 h-11 flex items-center justify-center relative text-text-primary hover:text-accent-emerald transition-colors flex-shrink-0"
             aria-label={totalItems > 0 ? `Carrito con ${totalItems} productos` : "Carrito vacio"}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -5,10 +5,21 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { themeConfig } from "@/theme.config";
+import BiometricActivation from "@/components/auth/BiometricActivation";
+import BrandWordmark from "@/components/layout/BrandWordmark";
+import { isDemoModeClient } from "@/lib/demo-data";
+import { setDemoSession } from "@/lib/demo-auth";
 import type { BeforeInstallPromptEvent } from "@/types";
 
 export default function LoginPage() {
   const router = useRouter();
+  // Regla de UX: despues del login SIEMPRE vamos al home. Ignoramos el
+  // callbackUrl (aunque el que redirigio aca lo haya mandado) porque el
+  // user lo prefiere asi — evita que entre al carrito/checkout/producto
+  // especifico y le rompe la expectativa de "primer paso tras loguear =
+  // ver la tienda fresca desde la home".
+  const callbackUrl = "/";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -63,6 +74,23 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
+    // DEMO_MODE: no hay NextAuth configurado, asi que simulamos el login
+    // seteando una session fake en localStorage. Cualquier email/password
+    // con al menos 1 caracter sirve — es solo para testear el flow.
+    if (isDemoModeClient()) {
+      if (!email || !password) {
+        setError("Completa email y contraseña");
+        setLoading(false);
+        return;
+      }
+      setDemoSession(true);
+      setLoading(false);
+      router.push(callbackUrl);
+      router.refresh();
+      return;
+    }
+
+    // Produccion: NextAuth credentials
     const result = await signIn("credentials", {
       email,
       password,
@@ -74,18 +102,18 @@ export default function LoginPage() {
     if (result?.error) {
       setError("Email o contraseña incorrectos");
     } else {
-      router.push("/");
+      router.push(callbackUrl);
       router.refresh();
     }
   };
 
   return (
     <div className="max-w-md mx-auto px-4 py-4">
-      {/* Logo + descripcion de la app */}
+      {/* Logo wordmark (el mismo que en el header) + tagline + titulo */}
       <div className="text-center mb-5">
-        <p className="text-3xl mb-2">
-          <span className="text-accent-emerald tracking-wider drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" style={{ fontFamily: "var(--font-heading)" }}>{themeConfig.brand.name}</span>
-        </p>
+        <div className="mb-2">
+          <BrandWordmark className="text-4xl" />
+        </div>
         <p className="text-sm text-text-secondary leading-relaxed max-w-xs mx-auto mb-4">
           {themeConfig.brand.tagline}
         </p>
@@ -147,10 +175,18 @@ export default function LoginPage() {
         <div className="flex-1 h-px bg-border-glass" />
       </div>
 
-      {/* Boton de Google */}
+      {/* Boton de Google — en DEMO_MODE simulamos el login instantaneo */}
       <button
         type="button"
-        onClick={() => signIn("google", { callbackUrl: "/" })}
+        onClick={() => {
+          if (isDemoModeClient()) {
+            setDemoSession(true);
+            router.push(callbackUrl);
+            router.refresh();
+            return;
+          }
+          signIn("google", { callbackUrl });
+        }}
         className="w-full flex items-center justify-center gap-2 bg-bg-card border border-border-glass rounded-lg px-3 py-2.5 text-sm text-text-primary hover:border-accent-emerald/50 transition-colors"
       >
         <svg width="18" height="18" viewBox="0 0 24 24">
@@ -168,6 +204,11 @@ export default function LoginPage() {
           Crear cuenta
         </Link>
       </p>
+
+      {/* Activacion biometrica — solo se muestra si el device soporta WebAuthn */}
+      <div className="mt-4">
+        <BiometricActivation />
+      </div>
 
       {/* Banner de instalacion PWA */}
       {!isInstalled && !installDone && (

@@ -1,23 +1,32 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import CartSummary from "@/components/cart/CartSummary";
 import Link from "next/link";
 import { formatPrice, FREE_SHIPPING_THRESHOLD, FLAT_SHIPPING_COST, calcSubtotal, copyToClipboard, buildWhatsAppLink } from "@/lib/utils";
+import { themeConfig } from "@/theme.config";
+import { isDemoModeClient } from "@/lib/demo-data";
+import { useIsAuthenticated } from "@/hooks/useIsAuthenticated";
 
-// Datos de transferencia bancaria (vienen del .env, con fallbacks)
-const TRANSFER_CBU = process.env.NEXT_PUBLIC_TRANSFER_CBU ?? "";
-const TRANSFER_ALIAS = process.env.NEXT_PUBLIC_TRANSFER_ALIAS ?? "";
-const TRANSFER_TITULAR = process.env.NEXT_PUBLIC_TRANSFER_TITULAR ?? "";
-const TRANSFER_DISCOUNT = Number(process.env.NEXT_PUBLIC_TRANSFER_DISCOUNT ?? 10);
+// REGLA ECOMFLEX: los datos de pago y contacto vienen SIEMPRE de theme.config.ts.
+// No usar process.env.NEXT_PUBLIC_* para esto — un cliente nuevo solo deberia
+// editar theme.config.ts, no .env. Ver docs/superpowers/specs/ecomflex-design.md
+const { payments, contact } = themeConfig;
+const { checkout: checkoutCopy } = themeConfig.copy;
 
-// Wallet USDT para pagos crypto (red BSC / BEP-20)
-const USDT_WALLET = "0x3a00ebfaa27c4e4e6555349412d032370225fbbec";
-const USDT_NETWORK = "BSC (BEP-20)";
+const TRANSFER_CBU = payments.transferencia.datos.cbu;
+const TRANSFER_ALIAS = payments.transferencia.datos.alias;
+const TRANSFER_TITULAR = payments.transferencia.datos.titular;
+const TRANSFER_DISCOUNT = payments.transferencia.descuento;
 
-// Numero de WhatsApp para envio de comprobante (sin +, sin espacios)
-const WA_PHONE = process.env.NEXT_PUBLIC_EVOLUTION_PHONE ?? "";
+// Wallet USDT y red (ambos configurables por tienda)
+const USDT_WALLET = payments.crypto.wallet;
+const USDT_NETWORK = payments.crypto.red;
+
+// Numero de WhatsApp (sin +, sin espacios) — de themeConfig.contact
+const WA_PHONE = contact.whatsapp;
 
 type PayMethod = "transferencia" | "mercadopago" | "crypto";
 
@@ -30,9 +39,20 @@ interface TransferenciaResult {
 }
 
 export default function CheckoutPage() {
+  const router = useRouter();
+  const { authenticated, loading: authLoading } = useIsAuthenticated();
   const { items, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Auth gate client-side — en DEMO_MODE el middleware deja pasar, asi que
+  // el guard vive aca. Si el user no esta logueado lo mandamos al login
+  // con callbackUrl para que vuelva despues.
+  useEffect(() => {
+    if (!authLoading && !authenticated) {
+      router.replace("/auth/login?callbackUrl=/checkout");
+    }
+  }, [authLoading, authenticated, router]);
 
   // Estado del metodo de pago — transferencia va primero (UX intencional)
   const [payMethod, setPayMethod] = useState<PayMethod>("transferencia");
@@ -59,8 +79,34 @@ export default function CheckoutPage() {
     codigo_postal: "",
   });
 
+  // Opt-in de marketing (checkbox "quiero recibir ofertas y novedades").
+  // Default: habilitado si themeConfig permite mostrar el checkbox, y marcado
+  // por default porque es mejor UX (el usuario puede destildar antes de pagar).
+  // Tipamos explicitamente <boolean> porque themeConfig esta declarado `as const`
+  // y sin cast TypeScript infiere el tipo literal `true`, rompiendo setMarketingOptIn(e.target.checked).
+  const [marketingOptIn, setMarketingOptIn] = useState<boolean>(checkoutCopy.marketingOptIn.enabled);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  // Si el usuario opto por recibir marketing, lo suscribimos al cerrar el pedido.
+  // Fire-and-forget: no bloquea el checkout si el endpoint falla.
+  const subscribeMarketingIfOptedIn = async () => {
+    if (!marketingOptIn || !form.email || !form.email.includes("@")) return;
+    try {
+      await fetch("/api/email/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          source: "checkout",
+          nombre: form.nombre || undefined,
+        }),
+      });
+    } catch (err) {
+      console.error("[checkout] marketing opt-in falló, continuamos:", err);
+    }
   };
 
   // Clave estable del carrito para la dep del useEffect (evita re-runs por re-render del padre)
@@ -135,9 +181,33 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // SEGURIDAD: pagos desactivados hasta tener productos propios
-    // Los productos actuales son de prueba (datos de MercadoLibre)
-    // No se debe procesar ninguna compra real
+    // DEMO_MODE: simulamos el flujo sin tocar Sheets/MercadoPago.
+    // Permite probar visualmente los 3 metodos de pago sin procesar nada real.
+    if (isDemoModeClient()) {
+      // Fire-and-forget: si el user marco el opt-in, intentamos suscribirlo.
+      // En demo el endpoint seguramente falla y es OK (error solo a consola).
+      subscribeMarketingIfOptedIn();
+
+      if (payMethod === "transferencia") {
+        setTransferenciaResult({
+          order_id: `DEMO-${Date.now().toString(36).toUpperCase()}`,
+          total_original: total,
+          descuento_monto: descuentoMonto,
+          total_con_descuento: totalConDescuento,
+        });
+        return;
+      }
+      if (payMethod === "crypto") {
+        setCryptoSent(true);
+        return;
+      }
+      // MercadoPago en demo: no redirigimos, solo mostramos aviso.
+      setError("Demo: en produccion aca se redirige a MercadoPago. Probá Transferencia o Crypto para ver el flujo completo.");
+      return;
+    }
+
+    // SEGURIDAD: pagos desactivados hasta tener productos propios.
+    // Los productos demo son datos reales de MercadoLibre y no se deben cobrar.
     setError("La tienda esta en modo demostracion. Los pagos se habilitaran cuando tengamos productos propios.");
   };
 
@@ -155,29 +225,29 @@ export default function CheckoutPage() {
           </svg>
         </div>
 
-        <h2 className="font-heading text-2xl font-bold text-center mb-1">Pedido registrado</h2>
+        <h2 className="font-heading text-2xl font-bold text-center mb-1">{checkoutCopy.methods.transfer.postPurchase.title}</h2>
         <p className="text-text-secondary text-center text-sm mb-6">
-          Orden <span className="font-mono text-text-primary font-semibold">#{transferenciaResult.order_id}</span>
+          {checkoutCopy.methods.transfer.postPurchase.orderLabel} <span className="font-mono text-text-primary font-semibold">#{transferenciaResult.order_id}</span>
         </p>
 
         {/* Card con datos de transferencia */}
         <div className="bg-bg-card border border-accent-emerald/40 rounded-card p-5 space-y-4 mb-4">
-          <h3 className="font-semibold text-sm text-text-primary">Datos para la transferencia</h3>
+          <h3 className="font-semibold text-sm text-text-primary">{checkoutCopy.methods.transfer.postPurchase.datosLabel}</h3>
 
           {/* Monto exacto a transferir */}
           <div className="bg-accent-emerald/5 rounded-lg px-4 py-3 text-center">
-            <p className="text-xs text-text-muted mb-0.5">Monto exacto a transferir</p>
+            <p className="text-xs text-text-muted mb-0.5">{checkoutCopy.methods.transfer.postPurchase.amountLabel}</p>
             <p className="font-heading text-2xl font-bold text-accent-emerald">
               {formatPrice(transferenciaResult.total_con_descuento)}
             </p>
             <p className="text-xs text-text-muted mt-0.5">
-              (incluye {TRANSFER_DISCOUNT}% de descuento por transferencia)
+              {checkoutCopy.methods.transfer.postPurchase.amountNote.replace("{discount}", String(TRANSFER_DISCOUNT))}
             </p>
           </div>
 
           {/* CBU */}
           <div>
-            <span className="text-xs text-text-muted uppercase tracking-wider font-semibold block mb-1.5">CBU</span>
+            <span className="text-xs text-text-muted uppercase tracking-wider font-semibold block mb-1.5">{checkoutCopy.methods.transfer.postPurchase.cbuLabel}</span>
             <div className="flex items-center gap-2">
               <code className="flex-1 text-xs text-text-primary bg-bg-secondary border border-border-glass rounded px-2 py-1.5 break-all min-w-0 font-mono">
                 {TRANSFER_CBU}
@@ -191,14 +261,14 @@ export default function CheckoutPage() {
                     : "bg-accent-emerald/10 text-accent-emerald hover:bg-accent-emerald/20"
                 }`}
               >
-                {copiedField === "cbu" ? "Copiado!" : "Copiar"}
+                {copiedField === "cbu" ? checkoutCopy.methods.transfer.postPurchase.copiedButton : checkoutCopy.methods.transfer.postPurchase.copyButton}
               </button>
             </div>
           </div>
 
           {/* Alias */}
           <div>
-            <span className="text-xs text-text-muted uppercase tracking-wider font-semibold block mb-1.5">Alias</span>
+            <span className="text-xs text-text-muted uppercase tracking-wider font-semibold block mb-1.5">{checkoutCopy.methods.transfer.postPurchase.aliasLabel}</span>
             <div className="flex items-center gap-2">
               <code className="flex-1 text-sm text-text-primary bg-bg-secondary border border-border-glass rounded px-2 py-1.5 font-mono min-w-0">
                 {TRANSFER_ALIAS}
@@ -212,14 +282,14 @@ export default function CheckoutPage() {
                     : "bg-accent-emerald/10 text-accent-emerald hover:bg-accent-emerald/20"
                 }`}
               >
-                {copiedField === "alias" ? "Copiado!" : "Copiar"}
+                {copiedField === "alias" ? checkoutCopy.methods.transfer.postPurchase.copiedButton : checkoutCopy.methods.transfer.postPurchase.copyButton}
               </button>
             </div>
           </div>
 
           {/* Titular */}
           <div>
-            <span className="text-xs text-text-muted uppercase tracking-wider font-semibold block mb-1">Titular</span>
+            <span className="text-xs text-text-muted uppercase tracking-wider font-semibold block mb-1">{checkoutCopy.methods.transfer.postPurchase.titularLabel}</span>
             <span className="text-sm text-text-primary font-medium">{TRANSFER_TITULAR}</span>
           </div>
         </div>
@@ -227,8 +297,7 @@ export default function CheckoutPage() {
         {/* Instrucciones */}
         <div className="bg-bg-secondary border border-border-glass rounded-lg p-4 mb-5">
           <p className="text-xs text-text-secondary leading-relaxed">
-            Realiza la transferencia por el monto exacto y envia el comprobante por WhatsApp.
-            Confirmamos tu pedido en menos de 2 horas en horario laboral.
+            {checkoutCopy.methods.transfer.postPurchase.instructions}
           </p>
         </div>
 
@@ -243,15 +312,15 @@ export default function CheckoutPage() {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
           </svg>
-          Enviar comprobante por WhatsApp
+          {checkoutCopy.methods.transfer.postPurchase.whatsappButton}
         </a>
 
         <p className="text-xs text-text-muted text-center mb-6">
-          Te avisamos cuando confirmemos el pago.
+          {checkoutCopy.methods.transfer.postPurchase.footerNote}
         </p>
 
         <Link href="/productos" className="block text-center text-accent-emerald hover:underline text-sm">
-          Volver a la tienda
+          {checkoutCopy.methods.transfer.postPurchase.backToShop}
         </Link>
       </div>
     );
@@ -269,15 +338,17 @@ export default function CheckoutPage() {
             <polyline points="22 4 12 14.01 9 11.01" />
           </svg>
         </div>
-        <h2 className="font-heading text-2xl font-bold mb-2">Pedido registrado</h2>
+        <h2 className="font-heading text-2xl font-bold mb-2">{checkoutCopy.methods.crypto.postPurchase.title}</h2>
         <p className="text-text-secondary mb-4">
-          Tu pedido fue registrado. Una vez que confirmemos la transferencia USDT, te avisaremos por email a <strong className="text-text-primary">{form.email}</strong>.
+          {checkoutCopy.methods.crypto.postPurchase.notice.split("{email}")[0]}
+          <strong className="text-text-primary">{form.email}</strong>
+          {checkoutCopy.methods.crypto.postPurchase.notice.split("{email}")[1] ?? ""}
         </p>
         <p className="text-xs text-text-muted mb-6">
-          La verificacion suele tardar entre 10 minutos y 2 horas.
+          {checkoutCopy.methods.crypto.postPurchase.verificationTime}
         </p>
         <Link href="/productos" className="text-accent-emerald hover:underline">
-          Volver a la tienda
+          {checkoutCopy.methods.crypto.postPurchase.backToShop}
         </Link>
       </div>
     );
@@ -294,9 +365,9 @@ export default function CheckoutPage() {
           <line x1="3" y1="6" x2="21" y2="6" />
           <path d="M16 10a4 4 0 01-8 0" />
         </svg>
-        <p className="text-text-secondary text-lg mb-4">Tu carrito esta vacio</p>
+        <p className="text-text-secondary text-lg mb-4">{themeConfig.copy.cart.empty}</p>
         <Link href="/productos" className="text-accent-emerald hover:underline">
-          Ir a la tienda
+          {checkoutCopy.methods.transfer.postPurchase.backToShop}
         </Link>
       </div>
     );
@@ -307,8 +378,8 @@ export default function CheckoutPage() {
   // ============================================================
   return (
     <div className="max-w-3xl mx-auto px-3 min-[400px]:px-4 py-6 pb-24 overflow-x-hidden">
-      <h1 className="font-heading text-2xl font-bold mb-2">Checkout</h1>
-      <p className="text-sm text-text-secondary mb-5">Para coordinar el envio, completa tus datos de contacto y direccion de envio.</p>
+      <h1 className="font-heading text-2xl font-bold mb-2">{checkoutCopy.title}</h1>
+      <p className="text-sm text-text-secondary mb-5">{checkoutCopy.subtitle}</p>
 
       <div className="space-y-4">
         {/* Formulario de datos — columna unica, mas legible con acordeones */}
@@ -318,7 +389,7 @@ export default function CheckoutPage() {
           <details className="bg-bg-card rounded-card border border-border-glass overflow-hidden group">
             <summary className="px-3 min-[400px]:px-5 py-4 flex items-center justify-between cursor-pointer list-none">
               <div className="flex items-center gap-2">
-                <h2 className="font-heading font-semibold text-sm min-[400px]:text-base">Datos de contacto</h2>
+                <h2 className="font-heading font-semibold text-sm min-[400px]:text-base">{checkoutCopy.sections.contact}</h2>
                 {form.nombre && form.email && (
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-accent-emerald" aria-hidden="true">
                     <polyline points="20,6 9,17 4,12" />
@@ -336,6 +407,28 @@ export default function CheckoutPage() {
               </div>
               <Input label="Email" name="email" type="email" value={form.email} onChange={handleChange} required />
               <Input label="Telefono" name="telefono" type="tel" value={form.telefono} onChange={handleChange} required />
+
+              {/* Marketing opt-in — se muestra solo si themeConfig.copy.checkout.marketingOptIn.enabled es true.
+                  Si el usuario deja tildado este checkbox, al confirmar el pedido lo suscribimos
+                  al newsletter via /api/email/subscribe. Configurable por tienda desde theme.config.ts */}
+              {checkoutCopy.marketingOptIn.enabled && (
+                <label className="flex items-start gap-2 pt-2 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={marketingOptIn}
+                    onChange={(e) => setMarketingOptIn(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border border-border-glass bg-bg-secondary text-accent-emerald focus:ring-1 focus:ring-accent-emerald cursor-pointer flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs text-text-primary group-hover:text-accent-emerald transition-colors">
+                      {checkoutCopy.marketingOptIn.label}
+                    </span>
+                    <p className="text-[10px] text-text-muted mt-0.5 leading-snug">
+                      {checkoutCopy.marketingOptIn.helpText}
+                    </p>
+                  </div>
+                </label>
+              )}
             </div>
           </details>
 
@@ -343,7 +436,7 @@ export default function CheckoutPage() {
           <details className="bg-bg-card rounded-card border border-border-glass overflow-hidden group">
             <summary className="px-3 min-[400px]:px-5 py-4 flex items-center justify-between cursor-pointer list-none">
               <div className="flex items-center gap-2">
-                <h2 className="font-heading font-semibold text-sm min-[400px]:text-base">Direccion de envio</h2>
+                <h2 className="font-heading font-semibold text-sm min-[400px]:text-base">{checkoutCopy.sections.shipping}</h2>
                 {form.direccion && form.ciudad && (
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-accent-emerald" aria-hidden="true">
                     <polyline points="20,6 9,17 4,12" />
@@ -369,7 +462,7 @@ export default function CheckoutPage() {
               Solo un acordeon puede estar abierto a la vez (controlado por payMethod).
           ================================================ */}
           <div className="space-y-3">
-            <h2 className="font-heading font-semibold text-lg">Metodo de pago</h2>
+            <h2 className="font-heading font-semibold text-lg">{checkoutCopy.sections.payment}</h2>
 
             {/* ================================================
                 ACORDEON 1: TRANSFERENCIA BANCARIA — DESTACADA
@@ -406,14 +499,14 @@ export default function CheckoutPage() {
 
                 {/* Titulo y badges */}
                 <div className="flex-1 min-w-0 flex items-center gap-1.5 min-[400px]:gap-2 flex-wrap">
-                  <span className="font-semibold text-xs min-[400px]:text-sm text-blue-400">Transferencia</span>
+                  <span className="font-semibold text-xs min-[400px]:text-sm text-blue-400">{checkoutCopy.methods.transfer.label}</span>
                   {/* Badge RECOMENDADO — oculto en 320px para evitar overflow */}
                   <span className="hidden min-[360px]:inline text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-500 text-white">
-                    Recomendado
+                    {checkoutCopy.methods.transfer.recommended}
                   </span>
                   {/* Badge descuento */}
                   <span className="text-[10px] min-[400px]:text-[11px] font-bold px-1.5 min-[400px]:px-2 py-0.5 rounded-full border bg-orange-500/10 text-orange-400 border-orange-400/30">
-                    {TRANSFER_DISCOUNT}% OFF
+                    {TRANSFER_DISCOUNT}{checkoutCopy.methods.transfer.discountBadge}
                   </span>
                 </div>
 
@@ -510,14 +603,14 @@ export default function CheckoutPage() {
                           <line x1="18" y1="18" x2="18" y2="11" />
                           <polygon points="12 2 20 7 4 7" />
                         </svg>
-                        Ya realice la transferencia
+                        {checkoutCopy.methods.transfer.cta}
                       </>
                     )}
                   </span>
                 </button>
 
                 <p className="text-xs text-text-muted text-center">
-                  Tu pedido quedara registrado. Te avisamos por WhatsApp cuando confirmemos el pago.
+                  {checkoutCopy.methods.transfer.help}
                 </p>
               </div>
             </details>
@@ -552,11 +645,11 @@ export default function CheckoutPage() {
 
                 {/* Titulo y badges */}
                 <div className="flex-1 min-w-0 flex items-center gap-1.5 min-[400px]:gap-2 flex-wrap">
-                  <span className="font-semibold text-xs min-[400px]:text-sm text-text-primary">Tarjeta credito/debito</span>
+                  <span className="font-semibold text-xs min-[400px]:text-sm text-text-primary">{checkoutCopy.methods.mercadopago.label}</span>
                   <span className="hidden min-[360px]:inline text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500 text-white">
-                    MercadoPago
+                    {checkoutCopy.methods.mercadopago.badge}
                   </span>
-                  <span className="text-[10px] min-[400px]:text-xs font-semibold text-sky-400">12 cuotas</span>
+                  <span className="text-[10px] min-[400px]:text-xs font-semibold text-sky-400">{checkoutCopy.methods.mercadopago.installments}</span>
                 </div>
 
                 {/* Precio total */}
@@ -599,14 +692,14 @@ export default function CheckoutPage() {
                           <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
                           <line x1="1" y1="10" x2="23" y2="10" />
                         </svg>
-                        Pagar con MercadoPago
+                        {checkoutCopy.methods.mercadopago.cta}
                       </>
                     )}
                   </span>
                 </button>
 
                 <p className="text-xs text-text-muted text-center">
-                  Seras redirigido a MercadoPago para completar el pago de forma segura.
+                  {checkoutCopy.methods.mercadopago.help}
                 </p>
               </div>
             </details>
@@ -641,9 +734,9 @@ export default function CheckoutPage() {
 
                 {/* Titulo y badges */}
                 <div className="flex-1 min-w-0 flex items-center gap-1.5 min-[400px]:gap-2 flex-wrap">
-                  <span className="text-xs min-[400px]:text-sm font-bold text-yellow-400">Crypto</span>
+                  <span className="text-xs min-[400px]:text-sm font-bold text-yellow-400">{checkoutCopy.methods.crypto.label}</span>
                   <span className="text-[10px] font-bold px-1.5 min-[400px]:px-2 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/30">
-                    BSC BEP-20
+                    {checkoutCopy.methods.crypto.badgeTemplate.replace("{network}", USDT_NETWORK)}
                   </span>
                 </div>
 
@@ -666,36 +759,36 @@ export default function CheckoutPage() {
                 {/* Panel de datos estilo Binance */}
                 <div className="rounded-lg p-4 space-y-3 bg-yellow-500/5 border border-yellow-500/20">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs uppercase tracking-wider font-semibold text-text-muted">Red</span>
+                    <span className="text-xs uppercase tracking-wider font-semibold text-text-muted">{checkoutCopy.methods.crypto.networkLabel}</span>
                     <span className="text-sm font-bold px-2 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/30">
                       {USDT_NETWORK}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-xs uppercase tracking-wider font-semibold text-text-muted">Monto ARS</span>
+                    <span className="text-xs uppercase tracking-wider font-semibold text-text-muted">{checkoutCopy.methods.crypto.amountArsLabel}</span>
                     <span className="text-sm font-bold text-text-primary">{formatPrice(total)}</span>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-xs uppercase tracking-wider font-semibold text-text-muted">Monto USDT</span>
+                    <span className="text-xs uppercase tracking-wider font-semibold text-text-muted">{checkoutCopy.methods.crypto.amountUsdtLabel}</span>
                     {rateLoading ? (
-                      <span className="text-sm animate-pulse text-text-muted">Calculando...</span>
+                      <span className="text-sm animate-pulse text-text-muted">{checkoutCopy.methods.crypto.calculating}</span>
                     ) : usdtAmount ? (
                       <span className="text-sm font-bold text-yellow-400">{usdtAmount} USDT</span>
                     ) : (
-                      <span className="text-sm text-text-muted">No disponible</span>
+                      <span className="text-sm text-text-muted">{checkoutCopy.methods.crypto.unavailable}</span>
                     )}
                   </div>
 
                   {usdtRate && (
                     <p className="text-[10px] text-right text-text-muted">
-                      Cotizacion: 1 USDT = {formatPrice(Math.round(usdtRate))} ARS (Buenbit)
+                      {checkoutCopy.methods.crypto.rateTemplate.replace("{rate}", formatPrice(Math.round(usdtRate)))}
                     </p>
                   )}
 
                   <div>
-                    <span className="text-xs uppercase tracking-wider font-semibold block mb-1.5 text-text-muted">Direccion wallet</span>
+                    <span className="text-xs uppercase tracking-wider font-semibold block mb-1.5 text-text-muted">{checkoutCopy.methods.crypto.walletLabel}</span>
                     <div className="flex items-center gap-2">
                       <code className="flex-1 text-xs font-mono rounded px-2 py-1.5 break-all min-w-0 overflow-hidden bg-yellow-500/5 text-yellow-300 border border-yellow-500/20">
                         {USDT_WALLET}
@@ -707,7 +800,7 @@ export default function CheckoutPage() {
                           copiedField === "wallet" ? "bg-yellow-500/20" : "bg-yellow-500/10 hover:bg-yellow-500/20"
                         }`}
                       >
-                        {copiedField === "wallet" ? "Copiado!" : "Copiar"}
+                        {copiedField === "wallet" ? checkoutCopy.methods.transfer.postPurchase.copiedButton : checkoutCopy.methods.transfer.postPurchase.copyButton}
                       </button>
                     </div>
                   </div>
@@ -715,11 +808,11 @@ export default function CheckoutPage() {
 
                 {/* Aviso importante — estilo alerta Binance */}
                 <div className="rounded-lg p-3 bg-yellow-500/5 border border-yellow-500/20">
-                  <p className="text-xs font-semibold mb-1 text-yellow-400">Importante</p>
+                  <p className="text-xs font-semibold mb-1 text-yellow-400">{checkoutCopy.methods.crypto.importantTitle}</p>
                   <ul className="text-xs space-y-1 text-text-muted">
-                    <li>Envia USDT <strong className="text-text-primary">unicamente por la red BSC (BEP-20)</strong></li>
-                    <li>Envia el monto exacto{usdtAmount ? <> (<strong className="text-yellow-400">{usdtAmount} USDT</strong>)</> : ""} para evitar demoras</li>
-                    <li>Una vez confirmada la transaccion, te avisamos por email</li>
+                    <li>{checkoutCopy.methods.crypto.instructionNetwork.replace("{network}", USDT_NETWORK)}</li>
+                    <li>{checkoutCopy.methods.crypto.instructionAmount.replace("{amount}", usdtAmount ? `(${usdtAmount} USDT)` : "")}</li>
+                    <li>{checkoutCopy.methods.crypto.instructionConfirm}</li>
                   </ul>
                 </div>
 
@@ -747,14 +840,14 @@ export default function CheckoutPage() {
                           <line x1="12" y1="1" x2="12" y2="23" />
                           <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
                         </svg>
-                        Ya realice la transferencia
+                        {checkoutCopy.methods.crypto.cta}
                       </>
                     )}
                   </span>
                 </button>
 
                 <p className="text-xs text-text-muted text-center">
-                  Tu pedido quedara pendiente hasta que confirmemos la transferencia USDT.
+                  {checkoutCopy.methods.crypto.help}
                 </p>
               </div>
             </details>

@@ -8,16 +8,26 @@ import {
   captureReferralFromUrl,
   getStoredReferralCode,
 } from "@/lib/referral-tracking";
+import { useModuleConfig } from "@/hooks/useModuleConfig";
 
 export function ReferralBanner() {
   const [code, setCode] = useState<string | null>(null);
+  // Respetar el toggle "referidos" del panel admin.
+  // CRITICO: no metas `isEnabled` en el dep array del useEffect — es una
+  // funcion nueva cada render que causa infinite loop. Resolvemos el valor
+  // a boolean fuera del efecto y usamos ese como dep estable.
+  const { isEnabled, loaded } = useModuleConfig();
+  const referidosActive = isEnabled("referidos");
 
   useEffect(() => {
+    if (!loaded) return;
+    if (!referidosActive) return;
     // Captura desde URL si existe y registra click (fire-and-forget)
     captureReferralFromUrl();
     setCode(getStoredReferralCode());
-  }, []);
+  }, [loaded, referidosActive]);
 
+  if (!referidosActive) return null;
   if (!code) return null;
 
   return (

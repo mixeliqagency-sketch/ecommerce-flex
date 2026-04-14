@@ -12,9 +12,45 @@ export default function InstallPrompt() {
   const [isManual, setIsManual] = useState(false);
 
   useEffect(() => {
-    // Registrar service worker
+    // Registrar service worker (o actualizarlo si cambio)
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+      // Antes de registrar, forzamos un update() sobre cualquier registro
+      // existente para matar el SW viejo que pueda estar sirviendo HTML
+      // stale del cache. Esto es critico en development cuando cambiamos
+      // el sw.js y el browser no se entera.
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((reg) => {
+          reg.update().catch(() => {});
+        });
+      }).catch(() => {});
+
+      navigator.serviceWorker.register("/sw.js").then((reg) => {
+        // Cuando el SW nuevo termina de instalarse, mandamos skipWaiting
+        // y tomamos control inmediato — asi el user no necesita un segundo
+        // refresh para ver los cambios.
+        if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
+        reg.addEventListener("updatefound", () => {
+          const sw = reg.installing;
+          if (!sw) return;
+          sw.addEventListener("statechange", () => {
+            if (sw.state === "installed" && navigator.serviceWorker.controller) {
+              // Hay una version nueva esperando — la activamos y recargamos
+              reg.waiting?.postMessage({ type: "SKIP_WAITING" });
+            }
+          });
+        });
+      }).catch(() => {});
+
+      // Listener para recargar la pagina cuando un SW nuevo toma control
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (typeof window !== "undefined") {
+          // Evitar loops: solo recargar una vez por sesion
+          if (!window.sessionStorage.getItem("sw-reload-done")) {
+            window.sessionStorage.setItem("sw-reload-done", "1");
+            window.location.reload();
+          }
+        }
+      });
     }
 
     // Si ya esta instalada como PWA, no mostrar nada

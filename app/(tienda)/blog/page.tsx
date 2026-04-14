@@ -7,7 +7,22 @@ export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: `Blog | ${themeConfig.brand.name}`,
-  description: `Articulos, guias y noticias de ${themeConfig.brand.name}`,
+  description: `Guias, consejos y articulos sobre suplementacion deportiva, nutricion y bienestar. Aprende a elegir la creatina, magnesio, colageno y proteina que te conviene.`,
+  keywords: [
+    "blog suplementos",
+    "creatina como tomar",
+    "magnesio bisglicinato",
+    "colageno hidrolizado",
+    "whey protein guia",
+    "nutricion deportiva",
+    "suplementos argentina blog",
+    ...themeConfig.seo.keywords,
+  ],
+  openGraph: {
+    title: `Blog | ${themeConfig.brand.name}`,
+    description: "Guias y consejos sobre suplementacion deportiva y bienestar.",
+    type: "website",
+  },
 };
 
 export default async function BlogPage() {

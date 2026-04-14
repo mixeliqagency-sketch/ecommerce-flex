@@ -37,7 +37,7 @@ export default function CartItem({ item }: { item: CartItemType }) {
       <div className="flex flex-col items-end gap-1">
         <button
           onClick={() => removeItem(item.product.id, item.variante)}
-          className="w-10 h-10 flex items-center justify-center text-text-muted hover:text-accent-red transition-colors"
+          className="w-11 h-11 flex items-center justify-center text-text-muted hover:text-accent-red transition-colors"
           aria-label={`Eliminar ${item.product.nombre} del carrito`}
         >
           <svg
@@ -57,7 +57,7 @@ export default function CartItem({ item }: { item: CartItemType }) {
               updateQuantity(item.product.id, item.cantidad - 1, item.variante)
             }
             disabled={item.cantidad === 1}
-            className={`w-10 h-10 flex items-center justify-center text-text-secondary hover:text-text-primary text-lg font-bold active:scale-90 transition-all ${item.cantidad === 1 ? "opacity-40 cursor-not-allowed" : ""}`}
+            className={`w-11 h-11 flex items-center justify-center text-text-secondary hover:text-text-primary text-lg font-bold active:scale-90 transition-all ${item.cantidad === 1 ? "opacity-40 cursor-not-allowed" : ""}`}
             aria-label="Reducir cantidad"
           >
             -
@@ -69,7 +69,7 @@ export default function CartItem({ item }: { item: CartItemType }) {
             onClick={() =>
               updateQuantity(item.product.id, item.cantidad + 1, item.variante)
             }
-            className="w-10 h-10 flex items-center justify-center text-text-secondary hover:text-text-primary text-lg font-bold active:scale-90 transition-all"
+            className="w-11 h-11 flex items-center justify-center text-text-secondary hover:text-text-primary text-lg font-bold active:scale-90 transition-all"
             aria-label="Aumentar cantidad"
           >
             +

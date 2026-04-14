@@ -3,14 +3,16 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { formatPrice, calcDiscount, calcInstallments, getBadgeClasses, calcTransferPrice, TRANSFER_DISCOUNT_PERCENT } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import { useReviews } from "@/context/ReviewsContext";
+import { useIsAuthenticated } from "@/hooks/useIsAuthenticated";
 import StarRating from "@/components/reviews/StarRating";
 import ShareButton from "@/components/shared/ShareButton";
 import { themeConfig } from "@/theme.config";
 import type { Product } from "@/types";
+
+const { product: productCopy, share: shareCopy } = themeConfig.copy;
 
 interface ProductCardProps {
   product: Product;
@@ -19,13 +21,16 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const { addItem } = useCart();
   const { summaries } = useReviews();
-  const { status } = useSession();
+  const { authenticated } = useIsAuthenticated();
   const router = useRouter();
 
-  // Si no esta logueado, redirigir a login en vez de agregar al carrito
+  // Gate de auth unificado: en produccion chequea NextAuth, en DEMO_MODE
+  // chequea la session fake en localStorage. Si no esta logueado lo mandamos
+  // a /auth/login con el callback al producto actual para que vuelva despues
+  // de loguearse.
   const handleAddToCart = () => {
-    if (status !== "authenticated") {
-      router.push("/auth/login");
+    if (!authenticated) {
+      router.push(`/auth/login?callbackUrl=/productos/${product.slug}`);
       return;
     }
     addItem(product);
@@ -39,11 +44,17 @@ export default function ProductCard({ product }: ProductCardProps) {
     ? `${window.location.origin}/productos/${product.slug}`
     : `/productos/${product.slug}`;
 
-  // Boton compartir reutilizable en los 3 casos del card
+  // Boton compartir reutilizable en los 3 casos del card.
+  // El texto del share usa el template de themeConfig.copy.share.textTemplate
+  // para que cada marca pueda poner su propio wordplay (ANDA y compartí en ANDAX,
+  // otra cosa en otra tienda).
+  const shareText = shareCopy.textTemplate
+    .replace("{productName}", product.nombre)
+    .replace("{brandName}", themeConfig.brand.name);
   const shareButton = (
     <ShareButton
       title={product.nombre}
-      text={`Mira ${product.nombre} en ${themeConfig.brand.name}`}
+      text={shareText}
       url={productUrl}
       variant="icon"
     />
@@ -120,21 +131,32 @@ export default function ProductCard({ product }: ProductCardProps) {
             <span className="text-xs text-text-muted line-through">
               {formatPrice(product.precio)}
             </span>
-            <span className="text-[10px] text-text-muted">con tarjeta</span>
+            <span className="text-[10px] text-text-muted">{productCopy.withCard}</span>
           </div>
           {/* Precio por transferencia (con descuento configurable) */}
           <div className="flex items-baseline gap-1.5 flex-wrap">
             <span className="font-heading font-bold text-sm min-[360px]:text-base text-accent-emerald">
               {formatPrice(calcTransferPrice(product.precio))}
             </span>
-            <span className="text-[10px] font-semibold text-accent-orange">{TRANSFER_DISCOUNT_PERCENT}% OFF transferencia</span>
+            <span className="text-[10px] font-semibold text-accent-orange">{TRANSFER_DISCOUNT_PERCENT}{productCopy.transferDiscount}</span>
           </div>
         </div>
 
         {/* Cuotas */}
         {cuotas && product.tipo === "suplemento" && (
-          <p className="text-[10px] text-text-muted mb-1.5">
-            {cuotas.cantidad} cuotas de {formatPrice(cuotas.monto)}
+          <p className="text-[10px] text-text-muted mb-1">
+            {productCopy.installmentsTemplate
+              .replace("{count}", String(cuotas.cantidad))
+              .replace("{amount}", formatPrice(cuotas.monto))}
+          </p>
+        )}
+
+        {/* Scarcity — mostrar alerta cuando stock <= threshold configurable.
+            REGLA MARKETING: efectivo 10-20 unidades. Menos es "dramatico demas". */}
+        {product.stock > 0 && product.stock <= productCopy.lowStockThreshold && product.tipo === "suplemento" && (
+          <p className="text-[10px] text-accent-orange font-semibold mb-1.5 flex items-center gap-1">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent-orange animate-pulse" aria-hidden="true" />
+            {productCopy.lowStockTemplate.replace("{count}", String(product.stock))}
           </p>
         )}
 
@@ -145,7 +167,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               onClick={handleAddToCart}
               className="flex-1 bg-accent-orange text-white text-xs font-semibold py-2 rounded-lg transition-all hover:brightness-110 hover:scale-[1.02] active:scale-[0.98]"
             >
-              Agregar al carrito
+              {productCopy.addToCart}
             </button>
             {shareButton}
           </div>
@@ -157,7 +179,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               disabled
               className="flex-1 bg-accent-orange text-white text-xs font-semibold py-2 rounded-lg opacity-50 cursor-not-allowed"
             >
-              Agotado
+              {productCopy.outOfStock}
             </button>
             {shareButton}
           </div>
@@ -169,7 +191,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               href={`/productos/${product.slug}`}
               className="flex-1 bg-accent-emerald text-white text-xs font-semibold py-2 rounded-lg transition-all hover:brightness-110 hover:scale-[1.02] active:scale-[0.98] text-center"
             >
-              Ver detalle
+              {productCopy.viewDetail}
             </Link>
             {shareButton}
           </div>

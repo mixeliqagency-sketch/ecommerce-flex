@@ -13,6 +13,7 @@ import {
 } from "./helpers";
 import { getPublicSheetId } from "./client";
 import { RANGES, COL } from "./constants";
+import { isDemoMode, DEMO_BLOG_POSTS } from "@/lib/demo-data";
 import type { BlogPost } from "@/types";
 
 const WORDS_PER_MINUTE = 200;
@@ -45,6 +46,7 @@ function mapRowToBlogPost(row: string[]): BlogPost {
 }
 
 export async function getAllBlogPosts(): Promise<BlogPost[]> {
+  if (isDemoMode()) return DEMO_BLOG_POSTS;
   const rows = await getRows(getPublicSheetId(), RANGES.BLOG);
   return rows.map(mapRowToBlogPost).filter((p) => p.slug);
 }
@@ -57,6 +59,9 @@ export async function getPublishedBlogPosts(): Promise<BlogPost[]> {
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
+  if (isDemoMode()) {
+    return DEMO_BLOG_POSTS.find((p) => p.slug === slug) ?? null;
+  }
   const row = await findRow(getPublicSheetId(), RANGES.BLOG, COL.BLOG_POST.SLUG, slug);
   return row ? mapRowToBlogPost(row) : null;
 }

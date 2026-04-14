@@ -1,6 +1,9 @@
 "use client";
 
 import { useCart } from "@/context/CartContext";
+import { themeConfig } from "@/theme.config";
+
+const { toast: toastCopy } = themeConfig.copy;
 
 // Toast flotante que aparece cuando se agrega un producto al carrito
 export default function CartToast() {
@@ -25,7 +28,7 @@ export default function CartToast() {
               {toastProduct.nombre}
             </p>
             <p className="text-xs text-accent-emerald">
-              Agregado al carrito ({totalItems} {totalItems === 1 ? "item" : "items"})
+              {toastCopy.addedToCart} ({totalItems} {totalItems === 1 ? toastCopy.itemSuffix : toastCopy.itemsSuffix})
             </p>
           </div>
 
@@ -34,7 +37,7 @@ export default function CartToast() {
             onClick={openCart}
             className="text-xs font-semibold text-accent-emerald hover:text-white bg-accent-emerald/10 hover:bg-accent-emerald px-3 py-1.5 rounded-lg transition-all flex-shrink-0"
           >
-            Ver
+            {toastCopy.viewButton}
           </button>
         </div>
       </div>

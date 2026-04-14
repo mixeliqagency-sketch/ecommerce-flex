@@ -3,10 +3,13 @@
 import { useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { formatPrice, calcDiscount } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
+import { useIsAuthenticated } from "@/hooks/useIsAuthenticated";
+import { themeConfig } from "@/theme.config";
 import type { Product } from "@/types";
+
+const { catalog: catalogCopy } = themeConfig.copy;
 
 interface PopularCarouselProps {
   products: Product[];
@@ -14,7 +17,7 @@ interface PopularCarouselProps {
 
 export default function PopularCarousel({ products }: PopularCarouselProps) {
   const { addItem } = useCart();
-  const { status } = useSession();
+  const { authenticated } = useIsAuthenticated();
   const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -65,7 +68,7 @@ export default function PopularCarousel({ products }: PopularCarouselProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-heading font-bold text-base italic text-text-primary">
-          Lo que mas pedis
+          {catalogCopy.popularTitle}
         </h2>
       </div>
 
@@ -110,8 +113,8 @@ export default function PopularCarousel({ products }: PopularCarouselProps) {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (status !== "authenticated") {
-                    router.push("/auth/login");
+                  if (!authenticated) {
+                    router.push(`/auth/login?callbackUrl=/productos/${product.slug}`);
                     return;
                   }
                   addItem(product);

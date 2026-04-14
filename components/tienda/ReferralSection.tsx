@@ -5,6 +5,9 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { themeConfig } from "@/theme.config";
+
+const { referral: refCopy } = themeConfig.copy;
 
 interface Referral {
   codigo: string;
@@ -70,46 +73,47 @@ export function ReferralSection() {
     <div className="bg-bg-card rounded-card border border-border-glass p-5 space-y-4">
       <div>
         <h2 className="font-heading font-semibold text-lg mb-1">
-          Invitá amigos
+          {refCopy.title}
         </h2>
         <p className="text-sm text-text-secondary">
-          Compartí tu link y ayudanos a crecer.
+          {refCopy.subtitle}
         </p>
       </div>
 
       <div>
-        <p className="text-xs text-text-secondary mb-1">Tu código</p>
+        <p className="text-xs text-text-secondary mb-1">{refCopy.codeLabel}</p>
         <p className="font-mono font-bold text-accent-emerald">
           {referral.codigo}
         </p>
       </div>
 
       <div>
-        <p className="text-xs text-text-secondary mb-1">Tu link</p>
+        <p className="text-xs text-text-secondary mb-1">{refCopy.linkLabel}</p>
         <div className="flex items-center gap-2">
           <input
             readOnly
             value={link}
             className="flex-1 min-w-0 bg-bg-primary border border-border-glass rounded-button px-3 py-2 text-xs text-text-secondary"
+            aria-label={refCopy.linkLabel}
           />
           <button
             onClick={handleCopy}
-            className="px-3 py-2 bg-accent-emerald text-white rounded-button text-xs font-semibold flex-shrink-0"
+            className="px-4 py-2 min-h-[44px] bg-accent-emerald text-white rounded-button text-xs font-semibold flex-shrink-0 hover:brightness-110 active:scale-[0.98] transition-all"
           >
-            {copied ? "Copiado" : "Copiar"}
+            {copied ? refCopy.copiedButton : refCopy.copyButton}
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border-glass">
         <div>
-          <p className="text-xs text-text-secondary">Clicks</p>
+          <p className="text-xs text-text-secondary">{refCopy.clicksLabel}</p>
           <p className="font-heading font-bold text-xl">
             {referral.total_clicks ?? 0}
           </p>
         </div>
         <div>
-          <p className="text-xs text-text-secondary">Conversiones</p>
+          <p className="text-xs text-text-secondary">{refCopy.conversionsLabel}</p>
           <p className="font-heading font-bold text-xl">
             {referral.total_conversiones ?? 0}
           </p>

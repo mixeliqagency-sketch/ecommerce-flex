@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { themeConfig } from "@/theme.config";
+
+const { share: shareCopy } = themeConfig.copy;
 
 interface ShareButtonProps {
   title: string;
@@ -9,6 +12,9 @@ interface ShareButtonProps {
   // Variantes visuales
   variant?: "icon" | "pill" | "full";
   className?: string;
+  // Label custom — si se omite, usa themeConfig.copy.share.buttonLabel
+  // (por default "ANDA y comparti" en ANDAX).
+  label?: string;
 }
 
 // Boton de compartir universal — usa Web Share API en mobile, clipboard en desktop
@@ -18,7 +24,9 @@ export default function ShareButton({
   url,
   variant = "icon",
   className = "",
+  label,
 }: ShareButtonProps) {
+  const buttonLabel = label ?? shareCopy.buttonLabel;
   const [copied, setCopied] = useState(false);
 
   const handleShare = useCallback(async () => {
@@ -69,8 +77,8 @@ export default function ShareButton({
       <button
         onClick={handleShare}
         className={`w-9 h-9 rounded-full border border-border-glass flex items-center justify-center text-text-secondary hover:text-accent-emerald hover:border-accent-emerald/30 transition-colors ${className}`}
-        aria-label="Compartir"
-        title={copied ? "Copiado!" : "Compartir"}
+        aria-label={buttonLabel}
+        title={copied ? "Copiado!" : buttonLabel}
       >
         {copied ? (
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent-emerald">
@@ -99,22 +107,24 @@ export default function ShareButton({
         ) : (
           <>
             <ShareIcon size={12} />
-            Compartir
+            {buttonLabel}
           </>
         )}
       </button>
     );
   }
 
-  // variant === "full"
+  // variant === "full" — usado en InviteFriends y ReferralSection.
+  // Contraste fuerte: fondo primary (coral) + texto blanco. Es un CTA principal,
+  // no un boton secundario, porque el referral es marketing organico gratis.
   return (
     <button
       onClick={handleShare}
-      className={`w-full flex items-center justify-center gap-2 text-sm font-semibold py-2.5 rounded-pill border border-border-glass text-text-secondary hover:text-accent-emerald hover:border-accent-emerald/30 transition-colors ${className}`}
+      className={`w-full flex items-center justify-center gap-2 text-sm font-semibold py-3 min-h-[48px] rounded-pill bg-accent-emerald text-white hover:brightness-110 hover:scale-[1.02] active:scale-[0.98] transition-all ${className}`}
     >
       {copied ? (
         <>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent-emerald">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>
           Link copiado!
@@ -122,7 +132,7 @@ export default function ShareButton({
       ) : (
         <>
           <ShareIcon />
-          Compartir
+          {buttonLabel}
         </>
       )}
     </button>

@@ -4,7 +4,13 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
+import { themeConfig } from "@/theme.config";
+import { isDemoModeClient, DEMO_PRODUCTS } from "@/lib/demo-data";
 import type { Product } from "@/types";
+
+const { cart: cartCopy } = themeConfig.copy;
+const CACHE_KEY = "ecomflex_all_products";
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 min
 
 // Mapa de categorias complementarias (si tiene X, sugerir Y)
 const COMPLEMENTOS: Record<string, string[]> = {
@@ -13,94 +19,130 @@ const COMPLEMENTOS: Record<string, string[]> = {
   colageno: ["proteinas", "superfoods", "adaptogenos"],
   adaptogenos: ["proteinas", "creatina", "superfoods"],
   superfoods: ["proteinas", "adaptogenos", "colageno"],
+  deportivo: ["wellness", "belleza"],
+  wellness: ["deportivo", "belleza"],
+  belleza: ["wellness", "deportivo"],
 };
+
+// Filtrado puro de sugerencias — no toca DOM ni hace I/O.
+// Se comparte entre el shortcut DEMO y el fetch en produccion.
+function computeSuggestions(allProducts: Product[], cartItems: { product: Product }[]): Product[] {
+  const cartIds = new Set(cartItems.map((i) => i.product.id));
+  const cartCategorias = Array.from(new Set(cartItems.map((i) => i.product.categoria)));
+
+  const targetCategorias = new Set<string>();
+  for (const cat of cartCategorias) {
+    const complementos = COMPLEMENTOS[cat] || [];
+    for (const c of complementos) {
+      if (!cartCategorias.includes(c)) targetCategorias.add(c);
+    }
+  }
+
+  let sugeridos = allProducts.filter(
+    (p) =>
+      !cartIds.has(p.id) &&
+      p.tipo === "suplemento" &&
+      p.stock > 0 &&
+      targetCategorias.has(p.categoria),
+  );
+
+  if (sugeridos.length === 0) {
+    sugeridos = allProducts.filter(
+      (p) => !cartIds.has(p.id) && p.tipo === "suplemento" && p.stock > 0,
+    );
+  }
+
+  sugeridos.sort((a, b) => {
+    if (a.badge === "oferta" && b.badge !== "oferta") return -1;
+    if (b.badge === "oferta" && a.badge !== "oferta") return 1;
+    return 0;
+  });
+
+  return sugeridos.slice(0, 3);
+}
+
+// Lee productos cacheados de sessionStorage si no pasaron mas de CACHE_TTL_MS.
+// Esto es critico porque CartCrossSell se monta/desmonta cada vez que se abre
+// el drawer — sin cache cada apertura hace un fetch de red y la seccion
+// "Completa tu compra" se demora en aparecer, matando la oportunidad de upsell.
+function readCache(): Product[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const { ts, data } = JSON.parse(raw) as { ts: number; data: Product[] };
+    if (Date.now() - ts > CACHE_TTL_MS) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(data: Product[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+  } catch {
+    // sessionStorage lleno o denegado — seguimos sin cache, degrada a fetch en cada abrir
+  }
+}
 
 export default function CartCrossSell() {
   const { items, addItem } = useCart();
   const [suggestions, setSuggestions] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  // Dependencia estable: solo re-fetch cuando cambian los productos (no las cantidades)
+  // Dependencia estable: solo recalcular cuando cambian los productos del
+  // carrito (no las cantidades, no el isOpen).
   const itemSlugs = items.map((i) => i.product.slug).sort().join(",");
 
   useEffect(() => {
     if (items.length === 0) {
       setSuggestions([]);
-      setLoading(false);
+      return;
+    }
+
+    // SHORTCUT DEMO_MODE: usamos DEMO_PRODUCTS directamente, sin fetch ni
+    // sessionStorage. El render es sincronico — "Completa tu compra" aparece
+    // en el primer paint del drawer.
+    if (isDemoModeClient()) {
+      setSuggestions(computeSuggestions(DEMO_PRODUCTS, items));
+      return;
+    }
+
+    // PRODUCCION: primero intentamos cache en sessionStorage (hit = sync, sin
+    // loading state visible). Solo hacemos network si el cache esta frio.
+    const cached = readCache();
+    if (cached) {
+      setSuggestions(computeSuggestions(cached, items));
       return;
     }
 
     const ac = new AbortController();
-
-    async function load() {
+    (async () => {
       try {
         const res = await fetch("/api/productos", { signal: ac.signal });
         if (!res.ok) return;
         const allProducts: Product[] = await res.json();
-
-        // IDs de productos ya en el carrito
-        const cartIds = new Set(items.map((i) => i.product.id));
-
-        // Categorias en el carrito
-        const cartCategorias = Array.from(new Set(items.map((i) => i.product.categoria)));
-
-        // Encontrar categorias complementarias
-        const targetCategorias = new Set<string>();
-        for (const cat of cartCategorias) {
-          const complementos = COMPLEMENTOS[cat] || [];
-          for (const c of complementos) {
-            if (!cartCategorias.includes(c)) {
-              targetCategorias.add(c);
-            }
-          }
+        writeCache(allProducts);
+        if (!ac.signal.aborted) {
+          setSuggestions(computeSuggestions(allProducts, items));
         }
-
-        // Filtrar productos sugeridos
-        let sugeridos = allProducts.filter(
-          (p) =>
-            !cartIds.has(p.id) &&
-            p.tipo === "suplemento" &&
-            p.stock > 0 &&
-            targetCategorias.has(p.categoria)
-        );
-
-        // Si no hay complementarios, sugerir de la misma categoria
-        if (sugeridos.length === 0) {
-          sugeridos = allProducts.filter(
-            (p) =>
-              !cartIds.has(p.id) &&
-              p.tipo === "suplemento" &&
-              p.stock > 0
-          );
-        }
-
-        // Maximo 3 sugerencias, priorizando ofertas
-        sugeridos.sort((a, b) => {
-          if (a.badge === "oferta" && b.badge !== "oferta") return -1;
-          if (b.badge === "oferta" && a.badge !== "oferta") return 1;
-          return 0;
-        });
-
-        setSuggestions(sugeridos.slice(0, 3));
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
         console.error("[cross-sell]", err);
         setSuggestions([]);
-      } finally {
-        if (!ac.signal.aborted) setLoading(false);
       }
-    }
-    load();
+    })();
     return () => ac.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemSlugs]);
 
-  if (loading || suggestions.length === 0) return null;
+  if (suggestions.length === 0) return null;
 
   return (
     <div className="px-5 py-3 border-t border-border-glass">
       <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2.5">
-        Completa tu compra
+        {cartCopy.completePurchase}
       </p>
       <div className="space-y-2">
         {suggestions.map((product) => (

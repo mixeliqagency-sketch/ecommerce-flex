@@ -188,7 +188,7 @@ export default function ReviewCarousel() {
     : FALLBACK_TESTIMONIALS.reduce((sum, t) => sum + t.rating, 0) / FALLBACK_TESTIMONIALS.length;
 
   return (
-    <section className="max-w-7xl mx-auto px-4 pt-6 md:pt-12 pb-20 md:pb-24">
+    <section className="max-w-7xl mx-auto px-4 pt-6 md:pt-12 pb-6 md:pb-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

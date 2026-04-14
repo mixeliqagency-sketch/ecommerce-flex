@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { formatPrice, calcDiscount, getBadgeClasses } from "@/lib/utils";
@@ -10,11 +10,17 @@ import { useReviews } from "@/context/ReviewsContext";
 import StarRating from "@/components/reviews/StarRating";
 import ReviewSection from "@/components/reviews/ReviewSection";
 import { FaqSchema } from "@/components/seo/FaqSchema";
+import { themeConfig } from "@/theme.config";
+import { useIsAuthenticated } from "@/hooks/useIsAuthenticated";
+
+const { product: productCopy } = themeConfig.copy;
 import type { Product } from "@/types";
 
 export default function ProductoDetallePage() {
   const { slug } = useParams<{ slug: string }>();
   const { addItem } = useCart();
+  const { authenticated } = useIsAuthenticated();
+  const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -95,6 +101,10 @@ export default function ProductoDetallePage() {
   });
 
   const handleAddToCart = () => {
+    if (!authenticated) {
+      router.push(`/auth/login?callbackUrl=/productos/${slug}`);
+      return;
+    }
     addItem(product, cantidad, selectedVariante);
   };
 
@@ -233,15 +243,15 @@ export default function ProductoDetallePage() {
 
               <button
                 onClick={handleAddToCart}
-                className="flex-1 bg-accent-orange text-white py-3 rounded-card font-semibold transition-all hover:brightness-125 hover:scale-[1.02] active:scale-[0.98]"
+                className="flex-1 bg-accent-orange text-white min-h-[48px] py-3 rounded-card font-semibold transition-all hover:brightness-125 hover:scale-[1.02] active:scale-[0.98]"
               >
-                Agregar al carrito
+                {productCopy.addToCart}
               </button>
             </div>
           )}
 
           {product.stock === 0 && product.tipo === "suplemento" && (
-            <p className="text-accent-red font-semibold py-3">Sin stock</p>
+            <p className="text-accent-red font-semibold py-3">{productCopy.outOfStock}</p>
           )}
 
 
@@ -253,6 +263,36 @@ export default function ProductoDetallePage() {
           )}
         </div>
       </div>
+
+      {/* Preguntas frecuentes — acordeones con las FAQs del producto.
+          El array `faqs` ya se construye para el JSON-LD (rich snippet en Google),
+          pero ademas lo renderizamos visualmente para reducir friccion/objections
+          del usuario antes de comprar. */}
+      {faqs.length > 0 && (
+        <section className="max-w-3xl mx-auto mt-10 mb-6">
+          <h2 className="font-heading text-xl md:text-2xl font-bold text-text-primary mb-4">
+            Preguntas frecuentes
+          </h2>
+          <div className="space-y-2">
+            {faqs.map((faq, i) => (
+              <details
+                key={i}
+                className="group bg-bg-card border border-border-glass rounded-card overflow-hidden"
+              >
+                <summary className="flex items-center justify-between gap-3 px-4 py-3.5 cursor-pointer list-none hover:bg-bg-secondary transition-colors">
+                  <span className="font-semibold text-sm text-text-primary">{faq.question}</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted group-open:rotate-180 transition-transform flex-shrink-0" aria-hidden="true">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </summary>
+                <div className="px-4 pb-4 pt-1 text-sm text-text-secondary leading-relaxed">
+                  {faq.answer}
+                </div>
+              </details>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Seccion de resenas */}
       <ReviewSection productSlug={product.slug} />

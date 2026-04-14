@@ -63,10 +63,15 @@ export default function TopBar() {
   if (PROMOS.length === 0) return null;
 
   const promo = PROMOS[index];
-  const bgColor = isLight ? "var(--bg-secondary)" : "var(--bg-primary)";
-  const textColor = isLight ? "var(--text-primary)" : "var(--text-primary)";
-  const goldColor = "var(--color-primary)";
-  const borderColor = "var(--border-decorative)";
+  // Paleta AOURA exacta para el TopBar (portada de aura/components/layout/TopBar.tsx:53-56).
+  // Dark mode: negro premium #0A0A0B con dorado tan #C9A96E — estilo etiqueta lujo.
+  // Light mode: crema calida #FAF6F0 con dorado oscuro #8B6914 + borde #D4B896.
+  // Estos colores son de marca institucional, NO del primary color de la tienda,
+  // asi que se hardcodean acá (valen para AOURA y cualquier tienda que use su paleta).
+  const bgColor = isLight ? "#FAF6F0" : "#0A0A0B";
+  const textColor = isLight ? "#5C4A32" : "#FFFFFF";
+  const goldColor = isLight ? "#8B6914" : "#C9A96E";
+  const borderColor = isLight ? "#D4B896" : "#C9A96E";
 
   return (
     <div

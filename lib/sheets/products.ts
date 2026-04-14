@@ -4,6 +4,7 @@
 import { getRows, findRowIndex, updateCell, colLetter } from "./helpers";
 import { getPublicSheetId } from "./client";
 import { RANGES, COL } from "./constants";
+import { isDemoMode, DEMO_PRODUCTS } from "@/lib/demo-data";
 import type { Product } from "@/types";
 
 // Convierte una fila de la hoja en un objeto Product tipado
@@ -34,12 +35,16 @@ function mapRowToProduct(row: string[]): Product {
 
 // Trae todos los productos activos (con id y nombre) de la hoja Productos
 export async function getProducts(): Promise<Product[]> {
+  if (isDemoMode()) return DEMO_PRODUCTS;
   const rows = await getRows(getPublicSheetId(), RANGES.PRODUCTOS);
   return rows.map(mapRowToProduct).filter((p) => p.id && p.nombre);
 }
 
 // Busca un producto por su slug único
 export async function getProductBySlug(slug: string): Promise<Product | null> {
+  if (isDemoMode()) {
+    return DEMO_PRODUCTS.find((p) => p.slug === slug) ?? null;
+  }
   const products = await getProducts();
   return products.find((p) => p.slug === slug) ?? null;
 }

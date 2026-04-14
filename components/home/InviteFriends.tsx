@@ -3,7 +3,10 @@
 import ShareButton from "@/components/shared/ShareButton";
 import { themeConfig } from "@/theme.config";
 
-// CTA para que el usuario comparta la app con amigos — marketing organico gratis
+const { invite: inviteCopy } = themeConfig.copy;
+
+// CTA para que el usuario comparta la app con amigos — marketing organico gratis.
+// Todos los textos vienen de themeConfig.copy.invite.* para swap & ship.
 export default function InviteFriends() {
   return (
     <section className="max-w-7xl mx-auto px-4 py-4 md:py-8">
@@ -12,7 +15,7 @@ export default function InviteFriends() {
         <div className="relative">
           {/* Icono de personas */}
           <div className="w-14 h-14 rounded-full bg-accent-emerald/10 flex items-center justify-center mx-auto mb-4">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-emerald">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-emerald" aria-hidden="true">
               <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M23 21v-2a4 4 0 00-3-3.87" />
@@ -20,16 +23,17 @@ export default function InviteFriends() {
             </svg>
           </div>
           <h2 className="font-heading text-xl md:text-2xl font-bold mb-2">
-            Invita a un amigo
+            {inviteCopy.title}
           </h2>
           <p className="text-text-secondary text-sm max-w-md mx-auto mb-6">
-            Compartile {themeConfig.brand.name} a alguien que busque los mejores productos online. Ofertas, calidad y envio rapido. Todo en un solo lugar.
+            {inviteCopy.subtitle}
           </p>
           <div className="max-w-xs mx-auto">
             <ShareButton
               title={`${themeConfig.brand.name} — ${themeConfig.brand.tagline}`}
-              text={`Te recomiendo ${themeConfig.brand.name}: los mejores productos online con ofertas, calidad y atencion personalizada. Todo en un solo lugar.`}
+              text={inviteCopy.shareText}
               variant="full"
+              label={inviteCopy.shareButtonLabel}
             />
           </div>
         </div>

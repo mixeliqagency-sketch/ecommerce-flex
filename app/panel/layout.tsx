@@ -4,12 +4,22 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getAuthSession } from "@/lib/auth";
+import DemoAdminGate from "@/components/panel/DemoAdminGate";
+
+// Defense in depth: si por error DEMO_MODE=true llega a produccion,
+// el check de NODE_ENV mantiene el panel protegido igual.
+const IS_DEMO =
+  process.env.DEMO_MODE === "true" &&
+  process.env.NODE_ENV !== "production";
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
-  const session = await getAuthSession();
-
-  if (!session || session.user.role !== "admin") {
-    redirect("/auth/login?callbackUrl=/panel");
+  // En DEMO_MODE dejamos entrar al panel sin auth — sirve para que un cliente
+  // potencial vea el producto completo antes de configurar NextAuth.
+  if (!IS_DEMO) {
+    const session = await getAuthSession();
+    if (!session || session.user.role !== "admin") {
+      redirect("/auth/login?callbackUrl=/panel");
+    }
   }
 
   return (
@@ -28,11 +38,22 @@ export default async function PanelLayout({ children }: { children: React.ReactN
             <Link href="/panel/redes-sociales" className="hover:text-[var(--color-primary)] transition">Redes</Link>
             <Link href="/panel/referidos" className="hover:text-[var(--color-primary)] transition">Referidos</Link>
             <Link href="/panel/config" className="hover:text-[var(--color-primary)] transition">Config</Link>
-            <Link href="/" className="hover:text-[var(--color-primary)] transition">← Tienda</Link>
+            <Link href="/" className="hover:text-[var(--color-primary)] transition inline-flex items-center gap-1">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+              Tienda
+            </Link>
           </nav>
         </div>
       </header>
-      <main className="container mx-auto px-4 py-8">{children}</main>
+      <main className="container mx-auto px-4 py-8">
+        {/* En DEMO_MODE este gate client-side chequea isDemoAdmin() del
+            localStorage y redirige a /cuenta si no activo el "soy el dueno".
+            En prod el gate es transparente — el server-side ya verifico role. */}
+        <DemoAdminGate>{children}</DemoAdminGate>
+      </main>
     </div>
   );
 }

@@ -76,7 +76,13 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 dias
+    // Post-audit 2026-04-13: bajamos de 30 dias a 7 dias.
+    // NIST 2024 recomienda max 8 horas para tokens sensibles, pero Ecomflex
+    // es e-commerce (no banco), y 7 dias es el equilibrio entre seguridad
+    // y UX (no querés que un comprador tenga que loguearse todas las semanas).
+    // updateAge: si el user esta activo, el token se refresca cada 24hs.
+    maxAge: 7 * 24 * 60 * 60, // 7 dias
+    updateAge: 24 * 60 * 60,  // refresh cada 24hs de actividad
   },
   callbacks: {
     // Cuando un usuario inicia sesion con Google, crearlo en Sheets si no existe
