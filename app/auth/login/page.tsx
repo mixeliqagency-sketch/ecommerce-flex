@@ -54,14 +54,19 @@ export default function LoginPage() {
       window.matchMedia("(display-mode: standalone)").matches ||
       (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
 
-    // Biometric login visible solo si: standalone + soporte WebAuthn + ya
-    // hay una credencial registrada (flag en localStorage para demo mode,
-    // o respuesta del endpoint de webauthn status en prod).
+    // Biometric login visible solo si:
+    // - standalone (PWA instalada)
+    // - soporte WebAuthn
+    // - el user ya hizo email/Google login previamente (captura de email)
+    // - ya activo huella desde /cuenta
+    // Pablo 2026-04-14: el gate de "has_email_login" garantiza que el mail
+    // se capture si o si antes de ofrecer el metodo alternativo de login.
     if (standalone && typeof window.PublicKeyCredential !== "undefined") {
+      const hasEmailLogin = localStorage.getItem("has_email_login") === "true";
       const registered =
         (isDemoModeClient() && localStorage.getItem("demo_biometric_registered") === "true") ||
         localStorage.getItem("biometric_credential_id") !== null;
-      if (registered) setCanBiometricLogin(true);
+      if (hasEmailLogin && registered) setCanBiometricLogin(true);
     }
 
     if (standalone) {
@@ -178,6 +183,11 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
+      // Marca de captura de email — gatea la activacion/login biometrico.
+      // Sin este flag, BiometricActivation y el boton "Ingresar con huella"
+      // se ocultan para forzar al user a dar su email primero.
+      localStorage.setItem("has_email_login", "true");
+      localStorage.setItem("user_email", email);
       setDemoSession(true);
       setLoading(false);
       router.push(callbackUrl);
@@ -270,11 +280,14 @@ export default function LoginPage() {
         <div className="flex-1 h-px bg-border-glass" />
       </div>
 
-      {/* Boton de Google — en DEMO_MODE simulamos el login instantaneo */}
+      {/* Boton de Google — en DEMO_MODE simulamos el login instantaneo.
+          Google OAuth tambien captura email asi que marca has_email_login. */}
       <button
         type="button"
         onClick={() => {
           if (isDemoModeClient()) {
+            localStorage.setItem("has_email_login", "true");
+            localStorage.setItem("user_email", "demo@andax.com.ar");
             setDemoSession(true);
             router.push(callbackUrl);
             router.refresh();

@@ -27,42 +27,38 @@ export default function BiometricActivation() {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
-    // Regla UX (Pablo 2026-04-14): esta card solo tiene sentido dentro de
-    // la PWA instalada — en el browser comun la huella digital no aporta
-    // porque el user ya esta tipeando contrasena. Chequeamos display-mode
-    // standalone (iOS Safari + Android Chrome la prenden cuando la app
-    // se abre desde el icono de la home screen, no desde la pestana).
     if (typeof window === "undefined") return;
     const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
-      // iOS Safari legacy check
       (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
     setIsStandalone(standalone);
-    if (!standalone) {
+
+    // Regla UX Pablo 2026-04-14:
+    // 1. Solo dentro de la PWA instalada (standalone)
+    // 2. Solo si el user ya hizo login con email previamente — asi
+    //    garantizamos captura de email para marketing antes de ofrecer
+    //    un metodo de login alternativo que pueda saltear la captura.
+    if (!standalone) { setStatus("unsupported"); return; }
+    if (!window.PublicKeyCredential) { setStatus("unsupported"); return; }
+    if (localStorage.getItem("has_email_login") !== "true") {
       setStatus("unsupported");
       return;
     }
 
-    // Chequeo de soporte WebAuthn. En iOS funciona desde Safari 14+ (2020+),
-    // en Android desde Chrome 70+ con biometric sensor. Desktop funciona con
-    // Windows Hello, Touch ID, etc.
-    if (!window.PublicKeyCredential) {
-      setStatus("unsupported");
-      return;
-    }
-    // Chequeo adicional: el dispositivo tiene un authenticator disponible
+    // Check sincronico del flag de registro antes de la call async, asi
+    // sabemos el estado final dentro del mismo .then(). Antes teniamos
+    // una race condition donde el setStatus("registered") sincrono era
+    // sobreescrito por el setStatus("ready") del .then() asincrono.
+    const alreadyRegistered =
+      localStorage.getItem("demo_biometric_registered") === "true" ||
+      localStorage.getItem("biometric_credential_id") !== null;
+
     window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
       .then((available) => {
-        setStatus(available ? "ready" : "unsupported");
+        if (!available) { setStatus("unsupported"); return; }
+        setStatus(alreadyRegistered ? "registered" : "ready");
       })
       .catch(() => setStatus("unsupported"));
-
-    // Si ya hay credencial registrada para este usuario, mostrar estado registered.
-    // En produccion esto llama a GET /api/auth/webauthn/status. En DEMO leemos
-    // localStorage para persistir el mock entre reloads.
-    if (isDemoModeClient() && localStorage.getItem("demo_biometric_registered") === "true") {
-      setStatus("registered");
-    }
   }, []);
 
   const handleActivate = async () => {
