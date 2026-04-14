@@ -110,7 +110,24 @@ export default function CuentaPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 pt-6 pb-6 space-y-5">
-      <h1 className="font-heading text-2xl font-bold">Mi Cuenta</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="font-heading text-2xl font-bold">Mi Cuenta</h1>
+        {/* Boton "Cerrar sesion" arriba a la derecha — antes vivia al fondo
+            del todo despues de Referidos y el user no lo encontraba. En
+            mobile se ve como icono, en desktop con texto. */}
+        <button
+          onClick={handleLogout}
+          aria-label="Cerrar sesion"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-accent-red hover:bg-accent-red/10 transition-colors text-sm font-medium flex-shrink-0"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          <span className="hidden sm:inline">Cerrar sesion</span>
+        </button>
+      </div>
 
       {/* Apariencia */}
       <div className="bg-bg-card rounded-card border border-border-glass px-5 py-3">
@@ -242,13 +259,6 @@ export default function CuentaPage() {
       {/* Referidos */}
       <ReferralSection />
 
-      {/* Cerrar sesion — en demo limpia la session fake, en prod llama signOut */}
-      <button
-        onClick={handleLogout}
-        className="w-full bg-bg-card border border-border-glass rounded-card p-4 text-accent-red hover:border-accent-red/40 transition-colors text-sm font-medium"
-      >
-        Cerrar sesion
-      </button>
     </div>
   );
 }
