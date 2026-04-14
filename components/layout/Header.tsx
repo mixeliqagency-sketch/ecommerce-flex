@@ -11,7 +11,7 @@ import { UserIcon } from "@/components/shared/Icons";
 import BrandWordmark from "@/components/layout/BrandWordmark";
 
 const NAV_LINKS = [
-  { href: "/productos", label: "Tienda" },
+  { href: "/productos", label: "Tus Productos" },
 ];
 
 export default function Header() {
