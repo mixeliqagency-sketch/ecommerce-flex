@@ -6,11 +6,14 @@ import Link from "next/link";
 import { getAuthSession } from "@/lib/auth";
 import DemoAdminGate from "@/components/panel/DemoAdminGate";
 
-// Defense in depth: si por error DEMO_MODE=true llega a produccion,
-// el check de NODE_ENV mantiene el panel protegido igual.
+// Defense in depth: DEMO_MODE solo opera fuera de prod por default. Para
+// showcase publicos intencionales seteamos ADEMAS DEMO_MODE_ALLOW_PRODUCTION
+// — mismo patron que middleware.ts. Sin el opt-in explicito, un deploy
+// accidental con DEMO_MODE=true sigue protegiendo el panel.
 const IS_DEMO =
   process.env.DEMO_MODE === "true" &&
-  process.env.NODE_ENV !== "production";
+  (process.env.NODE_ENV !== "production" ||
+    process.env.DEMO_MODE_ALLOW_PRODUCTION === "true");
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
   // En DEMO_MODE dejamos entrar al panel sin auth — sirve para que un cliente
