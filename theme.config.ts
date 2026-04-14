@@ -39,9 +39,12 @@ export const themeConfig = {
       pill: "100px",
     },
 
-    // Borde decorativo dorado tan AOURA (#C9A96E) — se usa en header, topbar, etc.
-    // Estilo "etiqueta de producto premium". Portado de AOURA TopBar.tsx:56.
-    decorativeBorder: "#C9A96E",
+    // Borde decorativo ANDAX — naranja brand (#F97316), mismo color que la
+    // X del logo. Reemplaza el dorado #C9A96E heredado de AOURA. Ahora todo
+    // el sistema de bordes decorativos (header, topbar, accents) matchea
+    // la identidad naranja/esmeralda de ANDAX en vez del gold beige que
+    // pertenecia a la marca vieja.
+    decorativeBorder: "#F97316",
 
     // Paleta AOURA — verde emerald como primary
     colors: {

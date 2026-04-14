@@ -63,15 +63,13 @@ export default function TopBar() {
   if (PROMOS.length === 0) return null;
 
   const promo = PROMOS[index];
-  // Paleta AOURA exacta para el TopBar (portada de aura/components/layout/TopBar.tsx:53-56).
-  // Dark mode: negro premium #0A0A0B con dorado tan #C9A96E — estilo etiqueta lujo.
-  // Light mode: crema calida #FAF6F0 con dorado oscuro #8B6914 + borde #D4B896.
-  // Estos colores son de marca institucional, NO del primary color de la tienda,
-  // asi que se hardcodean acá (valen para AOURA y cualquier tienda que use su paleta).
+  // Paleta ANDAX — reemplaza el dorado AOURA (#C9A96E) por el naranja de
+  // la X del logo (#F97316). Solo cambian goldColor + borderColor; el
+  // fondo negro premium y el texto blanco se mantienen como antes.
   const bgColor = isLight ? "#FAF6F0" : "#0A0A0B";
   const textColor = isLight ? "#5C4A32" : "#FFFFFF";
-  const goldColor = isLight ? "#8B6914" : "#C9A96E";
-  const borderColor = isLight ? "#D4B896" : "#C9A96E";
+  const goldColor = "#F97316";
+  const borderColor = "#F97316";
 
   return (
     <div
