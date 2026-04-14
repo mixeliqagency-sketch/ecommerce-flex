@@ -130,11 +130,26 @@ export default function BiometricActivation() {
       </div>
 
       {status === "registered" ? (
-        <div className="flex items-center gap-2 bg-accent-emerald/10 text-accent-emerald border border-accent-emerald/30 rounded-lg px-4 py-3 text-sm font-semibold">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <polyline points="20,6 9,17 4,12" />
-          </svg>
-          {copy.activeLabel}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 bg-accent-emerald/10 text-accent-emerald border border-accent-emerald/30 rounded-lg px-4 py-3 text-sm font-semibold">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="20,6 9,17 4,12" />
+            </svg>
+            {copy.activeLabel}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              try {
+                localStorage.removeItem("demo_biometric_registered");
+                localStorage.removeItem("biometric_credential_id");
+              } catch { /* Safari privado */ }
+              setStatus("ready");
+            }}
+            className="w-full text-xs text-text-muted hover:text-accent-red transition-colors py-1"
+          >
+            Desactivar huella digital
+          </button>
         </div>
       ) : (
         <button

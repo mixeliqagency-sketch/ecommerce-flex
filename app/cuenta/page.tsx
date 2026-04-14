@@ -100,13 +100,16 @@ export default function CuentaPage() {
   const displayUser = isDemoModeClient() ? DEMO_USER : session?.user;
   const initial = displayUser?.name?.charAt(0)?.toUpperCase() || "U";
 
-  // Cerrar sesion — clear NextAuth Y demo session Y el carrito a la vez.
-  // Regla UX (Pablo 2026-04-14): si el user se desloguea, el carrito no
-  // puede quedar persistido con items — tiene que ser una sesion fresca
-  // cuando vuelva a loguear. Ademas el Header bloquea el icono del carrito
-  // cuando no hay auth.
+  // Cerrar sesion — clear NextAuth Y demo session Y carrito Y flag biometrico.
+  // Regla UX (Pablo 2026-04-14): sesion nueva = estado fresco. Si el user
+  // se desloguea, no debe quedar data persistida (carrito, huella activada,
+  // etc). Si quiere biometrico otra vez, re-activa en /cuenta post-login.
   const handleLogout = () => {
     clearCart();
+    try {
+      localStorage.removeItem("demo_biometric_registered");
+      localStorage.removeItem("biometric_credential_id");
+    } catch { /* Safari privado */ }
     if (isDemoModeClient()) {
       setDemoSession(false);
       router.push("/");
