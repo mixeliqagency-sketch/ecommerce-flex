@@ -6,6 +6,8 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { themeConfig } from "@/theme.config";
+import { isDemoModeClient } from "@/lib/demo-data";
+import { DEMO_USER } from "@/lib/demo-auth";
 
 const { referral: refCopy } = themeConfig.copy;
 
@@ -23,8 +25,15 @@ export function ReferralSection() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session?.user?.email) return;
-    const userId = encodeURIComponent(session.user.email);
+    // En demo mode usamos el email del DEMO_USER porque no hay session real
+    // de NextAuth. Sin este fallback, el useEffect salia temprano y el loading
+    // quedaba stuck en "Cargando referidos..." para siempre.
+    const email = isDemoModeClient() ? DEMO_USER.email : session?.user?.email;
+    if (!email) {
+      setLoading(false);
+      return;
+    }
+    const userId = encodeURIComponent(email);
     fetch(`/api/referidos/${userId}`)
       .then((res) => {
         if (!res.ok) throw new Error("Error cargando referidos");
@@ -39,6 +48,7 @@ export function ReferralSection() {
         setError("No pudimos cargar tu link de referido");
         setLoading(false);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.email]);
 
   const link =
