@@ -734,14 +734,14 @@ export default function CheckoutPage() {
 
                 {/* Titulo y badges */}
                 <div className="flex-1 min-w-0 flex items-center gap-1.5 min-[400px]:gap-2 flex-wrap">
-                  <span className="text-xs min-[400px]:text-sm font-bold text-yellow-400">{checkoutCopy.methods.crypto.label}</span>
+                  <span className="text-xs min-[400px]:text-sm font-bold text-text-primary">{checkoutCopy.methods.crypto.label}</span>
                   <span className="text-[10px] font-bold px-1.5 min-[400px]:px-2 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/30">
                     {checkoutCopy.methods.crypto.badgeTemplate.replace("{network}", USDT_NETWORK)}
                   </span>
                 </div>
 
                 {/* Precio — siempre visible en el summary cerrado */}
-                <span className="font-heading font-bold text-xs min-[400px]:text-sm flex-shrink-0 text-yellow-400">
+                <span className="font-heading font-bold text-xs min-[400px]:text-sm flex-shrink-0 text-text-primary">
                   {usdtAmount ? `${usdtAmount} USDT` : formatPrice(total)}
                 </span>
 
@@ -775,7 +775,7 @@ export default function CheckoutPage() {
                     {rateLoading ? (
                       <span className="text-sm animate-pulse text-text-muted">{checkoutCopy.methods.crypto.calculating}</span>
                     ) : usdtAmount ? (
-                      <span className="text-sm font-bold text-yellow-400">{usdtAmount} USDT</span>
+                      <span className="text-sm font-bold text-text-primary">{usdtAmount} USDT</span>
                     ) : (
                       <span className="text-sm text-text-muted">{checkoutCopy.methods.crypto.unavailable}</span>
                     )}
@@ -790,7 +790,7 @@ export default function CheckoutPage() {
                   <div>
                     <span className="text-xs uppercase tracking-wider font-semibold block mb-1.5 text-text-muted">{checkoutCopy.methods.crypto.walletLabel}</span>
                     <div className="flex items-center gap-2">
-                      <code className="flex-1 text-xs font-mono rounded px-2 py-1.5 break-all min-w-0 overflow-hidden bg-yellow-500/5 text-yellow-300 border border-yellow-500/20">
+                      <code className="flex-1 text-xs font-mono rounded px-2 py-1.5 break-all min-w-0 overflow-hidden bg-yellow-500/5 text-text-primary border border-yellow-500/20">
                         {USDT_WALLET}
                       </code>
                       <button
@@ -808,7 +808,7 @@ export default function CheckoutPage() {
 
                 {/* Aviso importante — estilo alerta Binance */}
                 <div className="rounded-lg p-3 bg-yellow-500/5 border border-yellow-500/20">
-                  <p className="text-xs font-semibold mb-1 text-yellow-400">{checkoutCopy.methods.crypto.importantTitle}</p>
+                  <p className="text-xs font-semibold mb-1 text-text-primary">{checkoutCopy.methods.crypto.importantTitle}</p>
                   <ul className="text-xs space-y-1 text-text-muted">
                     <li>{checkoutCopy.methods.crypto.instructionNetwork.replace("{network}", USDT_NETWORK)}</li>
                     <li>{checkoutCopy.methods.crypto.instructionAmount.replace("{amount}", usdtAmount ? `(${usdtAmount} USDT)` : "")}</li>
