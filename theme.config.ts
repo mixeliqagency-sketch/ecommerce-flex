@@ -490,7 +490,7 @@ export const themeConfig = {
       ],
       finale: {
         letter: "X",
-        superscript: "2",                 // se renderea como ²
+        superscript: "",                  // "" = sin superscript (ANDAX limpio)
         word: "tus resultados",
         wordPrefix: "tus ",               // parte que queda en gris mas claro
         wordSuffix: "resultados",         // parte que cambia a naranja al final
