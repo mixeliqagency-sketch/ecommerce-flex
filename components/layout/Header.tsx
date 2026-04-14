@@ -121,19 +121,24 @@ export default function Header() {
           {/* Carrito */}
           <button
             onClick={openCart}
-            className="w-11 h-11 flex items-center justify-center relative text-text-primary hover:text-accent-emerald transition-colors flex-shrink-0"
+            className="w-11 h-11 flex items-center justify-center text-text-primary hover:text-accent-emerald transition-colors flex-shrink-0"
             aria-label={totalItems > 0 ? `Carrito con ${totalItems} productos` : "Carrito vacio"}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="9" cy="21" r="1" />
-              <circle cx="20" cy="21" r="1" />
-              <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
-            </svg>
-            {totalItems > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-accent-red text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center" aria-hidden="true">
-                {totalItems > 9 ? "9+" : totalItems}
-              </span>
-            )}
+            {/* Wrapper relative para anclar el badge al ICONO, no al boton.
+                Antes el badge usaba -top-1.5 sobre el boton w-11 h-11 y se
+                escapaba hacia arriba pegandose al topbar de promociones. */}
+            <span className="relative inline-flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
+              </svg>
+              {totalItems > 0 && (
+                <span className="absolute -top-1 -right-2 bg-accent-red text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center ring-2 ring-bg-primary" aria-hidden="true">
+                  {totalItems > 9 ? "9+" : totalItems}
+                </span>
+              )}
+            </span>
           </button>
 
           </div>{/* Fin grupo iconos */}
