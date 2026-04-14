@@ -12,7 +12,7 @@ export const themeConfig = {
   // === MARCA ===
   brand: {
     name: "ANDAX",
-    tagline: "Anda con todo",
+    tagline: "Anda x todo",
     description: "Suplementos premium argentinos para que andes con todo todos los dias. Creatina, magnesio, colageno, multivitaminicos y mas. Envios a todo el pais en 48h. RNPA oficial.",
     url: "https://andax.com.ar",                 // Pablo registra el dominio en nic.ar
     logo: "/andax-logo.svg",                      // Pablo sube el SVG a /public/
@@ -427,7 +427,7 @@ export const themeConfig = {
     // Texto mostrado en el prompt "Instalar app" del navegador / Play Store
     pwaName: "ANDAX",
     pwaShortName: "ANDAX",
-    pwaDescription: "Suplementos premium argentinos. Anda con todo.",
+    pwaDescription: "Suplementos premium argentinos. Anda x todo.",
     pwaBackgroundColor: "#0F1320",
     pwaThemeColor: "#0A0A0B",
     pwaDisplay: "standalone" as const,
@@ -449,7 +449,7 @@ export const themeConfig = {
       "Sin formulas magicas. Sin promesas que no se cumplen. Sin farmacia.",
       "Solo suplementos premium, en tu casa en 48 horas, con el tono de tu barrio.",
     ],
-    closingLine: "Anda con todo. Anda con ANDAX.",
+    closingLine: "Anda x todo. Anda con ANDAX.",
     values: [
       { title: "Movimiento",    desc: "Lo que haces con vos mismo todos los dias." },
       { title: "Accesibilidad", desc: "Los suplementos no son solo para deportistas de elite." },
@@ -463,7 +463,7 @@ export const themeConfig = {
   // === HOME PAGE ===
   home: {
     hero: {
-      title: "Anda con todo.",
+      title: "Anda x todo.",
       titleHighlight: "Todos los dias.",
       subtitle: "Suplementos premium para que tu cuerpo rinda al maximo. Energia, descanso, fuerza. Sin vueltas. RNPA oficial y envios a todo el pais en 48 horas.",
       ctaPrimary: { text: "Ver productos", href: "/productos" },
