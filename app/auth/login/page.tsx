@@ -5,7 +5,6 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { themeConfig } from "@/theme.config";
-import BiometricActivation from "@/components/auth/BiometricActivation";
 import BrandWordmark from "@/components/layout/BrandWordmark";
 import { isDemoModeClient } from "@/lib/demo-data";
 import { setDemoSession } from "@/lib/demo-auth";
@@ -32,9 +31,29 @@ export default function LoginPage() {
   const [showManualInstall, setShowManualInstall] = useState(false);
   const [isInAppBrowser, setIsInAppBrowser] = useState(false);
 
+  // Biometric login — solo se muestra si (a) estamos en PWA standalone y
+  // (b) el user ya activo la huella desde /cuenta. Regla Pablo 2026-04-14:
+  // no mostrar WebAuthn fuera de la app porque pierde sentido UX.
+  const [canBiometricLogin, setCanBiometricLogin] = useState(false);
+  const [bioLoading, setBioLoading] = useState(false);
+
   useEffect(() => {
     // Ya instalada como PWA
-    if (window.matchMedia("(display-mode: standalone)").matches) {
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+    // Biometric login visible solo si: standalone + soporte WebAuthn + ya
+    // hay una credencial registrada (flag en localStorage para demo mode,
+    // o respuesta del endpoint de webauthn status en prod).
+    if (standalone && typeof window.PublicKeyCredential !== "undefined") {
+      const registered =
+        (isDemoModeClient() && localStorage.getItem("demo_biometric_registered") === "true") ||
+        localStorage.getItem("biometric_credential_id") !== null;
+      if (registered) setCanBiometricLogin(true);
+    }
+
+    if (standalone) {
       setIsInstalled(true);
       return;
     }
@@ -58,6 +77,42 @@ export default function LoginPage() {
       window.removeEventListener("beforeinstallprompt", handler);
     };
   }, []);
+
+  // Login con huella — en demo simulamos el unlock; en prod pediriamos
+  // credentials.get() con el challenge del backend. El flag de activacion
+  // vive en localStorage (demo_biometric_registered).
+  const handleBiometricLogin = async () => {
+    setBioLoading(true);
+    setError("");
+    try {
+      if (isDemoModeClient()) {
+        // Delay realista para que sienta el prompt del OS
+        await new Promise((r) => setTimeout(r, 900));
+        setDemoSession(true);
+        router.push(callbackUrl);
+        router.refresh();
+        return;
+      }
+      // Prod: flow real de WebAuthn assertion
+      const optRes = await fetch("/api/auth/webauthn/login-options", { method: "POST" });
+      if (!optRes.ok) throw new Error("No se pudo iniciar el login biometrico");
+      const options = await optRes.json();
+      const assertion = await navigator.credentials.get({ publicKey: options });
+      if (!assertion) throw new Error("Login biometrico cancelado");
+      const verify = await fetch("/api/auth/webauthn/login-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(assertion),
+      });
+      if (!verify.ok) throw new Error("El servidor rechazo la huella");
+      router.push(callbackUrl);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No pudimos validar la huella");
+    } finally {
+      setBioLoading(false);
+    }
+  };
 
   const handleInstall = async () => {
     if (!installPrompt) return;
@@ -205,10 +260,29 @@ export default function LoginPage() {
         </Link>
       </p>
 
-      {/* Activacion biometrica — solo se muestra si el device soporta WebAuthn */}
-      <div className="mt-4">
-        <BiometricActivation />
-      </div>
+      {/* Activacion biometrica movida a /cuenta (post-login). No tiene sentido
+          mostrarla antes de que el user este autenticado — Pablo 2026-04-14. */}
+
+      {/* Boton "Ingresar con huella" — solo aparece si el user ya activo
+          la huella desde /cuenta Y esta en la PWA instalada. Ver canBiometricLogin. */}
+      {canBiometricLogin && (
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={handleBiometricLogin}
+            disabled={bioLoading}
+            className="w-full flex items-center justify-center gap-2 bg-accent-emerald/10 border border-accent-emerald/40 hover:bg-accent-emerald hover:text-white text-accent-emerald rounded-xl px-4 py-3 text-sm font-semibold transition-all disabled:opacity-60"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M17.81 4.47c-.08 0-.16-.02-.23-.06C15.66 3.42 14 3 12.01 3c-1.98 0-3.86.47-5.57 1.41" />
+              <path d="M3.5 9.72a.499.499 0 01-.41-.79c.99-1.4 2.25-2.5 3.75-3.27" />
+              <path d="M9.75 21.79c-.87-.87-1.34-1.43-2.01-2.64-.69-1.23-1.05-2.73-1.05-4.34 0-2.97 2.54-5.39 5.66-5.39s5.66 2.42 5.66 5.39" />
+              <path d="M14.91 22c-1.59-.44-2.63-1.03-3.72-2.1a7.297 7.297 0 01-2.17-5.22" />
+            </svg>
+            {bioLoading ? "Validando huella..." : "Ingresar con huella"}
+          </button>
+        </div>
+      )}
 
       {/* Banner de instalacion PWA */}
       {!isInstalled && !installDone && (

@@ -24,12 +24,28 @@ type Status = "idle" | "checking" | "unsupported" | "ready" | "registering" | "r
 export default function BiometricActivation() {
   const [status, setStatus] = useState<Status>("checking");
   const [error, setError] = useState<string | null>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
+    // Regla UX (Pablo 2026-04-14): esta card solo tiene sentido dentro de
+    // la PWA instalada — en el browser comun la huella digital no aporta
+    // porque el user ya esta tipeando contrasena. Chequeamos display-mode
+    // standalone (iOS Safari + Android Chrome la prenden cuando la app
+    // se abre desde el icono de la home screen, no desde la pestana).
+    if (typeof window === "undefined") return;
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      // iOS Safari legacy check
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    setIsStandalone(standalone);
+    if (!standalone) {
+      setStatus("unsupported");
+      return;
+    }
+
     // Chequeo de soporte WebAuthn. En iOS funciona desde Safari 14+ (2020+),
     // en Android desde Chrome 70+ con biometric sensor. Desktop funciona con
     // Windows Hello, Touch ID, etc.
-    if (typeof window === "undefined") return;
     if (!window.PublicKeyCredential) {
       setStatus("unsupported");
       return;
