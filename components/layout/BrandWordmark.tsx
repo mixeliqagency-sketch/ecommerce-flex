@@ -43,21 +43,6 @@ export default function BrandWordmark({ className = "" }: BrandWordmarkProps) {
         >
           {lastLetter}
         </span>
-        {/* Superscript ² pegado a la X. Ocupa el 55% de la altura del texto
-            y está posicionado absolutely para no empujar el baseline del header. */}
-        <sup
-          className="absolute font-black text-accent-orange"
-          style={{
-            top: "-0.2em",
-            right: "-0.55em",
-            fontSize: "0.58em",
-            lineHeight: 1,
-            textShadow: "0 0 10px rgba(249,115,22,0.6), 0 0 20px rgba(249,115,22,0.25)",
-          }}
-          aria-hidden="true"
-        >
-          2
-        </sup>
       </span>
     </span>
   );
