@@ -11,12 +11,14 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { default as authMiddleware } from "next-auth/middleware";
 
-// Defense in depth: el bypass de DEMO_MODE SOLO opera fuera de produccion.
-// Si por error en un deploy a Vercel quedara NEXT_PUBLIC_DEMO_MODE=true, el
-// check de NODE_ENV protege al panel admin y a las rutas protegidas igual.
+// Defense in depth: el bypass de DEMO_MODE opera fuera de produccion por
+// default. Para deploys publicos intencionales (showcase, url de venta, etc)
+// hay que setear ADEMAS DEMO_MODE_ALLOW_PRODUCTION=true — asi NADIE activa un
+// demo en prod accidentalmente solo por dejar NEXT_PUBLIC_DEMO_MODE=true.
 const IS_DEMO =
   process.env.NEXT_PUBLIC_DEMO_MODE === "true" &&
-  process.env.NODE_ENV !== "production";
+  (process.env.NODE_ENV !== "production" ||
+    process.env.DEMO_MODE_ALLOW_PRODUCTION === "true");
 
 export default function middleware(req: NextRequest) {
   // En demo: dejamos pasar todo. El panel /panel/* tambien queda accesible
