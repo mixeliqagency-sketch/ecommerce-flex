@@ -134,7 +134,7 @@ export default function Header() {
                 <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
               </svg>
               {totalItems > 0 && (
-                <span className="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 bg-accent-red text-white text-[9px] font-bold rounded-full min-w-[14px] h-[14px] px-0.5 flex items-center justify-center ring-2 ring-bg-primary" aria-hidden="true">
+                <span className="absolute top-0 right-0 translate-x-[70%] -translate-y-1/3 bg-accent-red text-white text-[9px] font-bold rounded-full min-w-[14px] h-[14px] px-0.5 flex items-center justify-center ring-2 ring-bg-primary" aria-hidden="true">
                   {totalItems > 9 ? "9+" : totalItems}
                 </span>
               )}
