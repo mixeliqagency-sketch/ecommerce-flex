@@ -13,7 +13,11 @@ export default function manifest(): MetadataRoute.Manifest {
     name: install.pwaName || brand.name,
     short_name: install.pwaShortName || brand.name,
     description: install.pwaDescription || brand.description,
-    start_url: "/",
+    // start_url: "/auth/login" — al abrir la PWA desde el icono de home,
+    // arranca en el login. Si el user ya esta logueado, la propia pagina
+    // de login lo redirige al home. Si tiene huella activada, el auto-trigger
+    // levanta el panel biometrico al instante. Pablo 2026-04-14.
+    start_url: "/auth/login",
     display: install.pwaDisplay,
     orientation: install.pwaOrientation,
     background_color: install.pwaBackgroundColor,

@@ -8,10 +8,20 @@ import { themeConfig } from "@/theme.config";
 import BrandWordmark from "@/components/layout/BrandWordmark";
 import { isDemoModeClient } from "@/lib/demo-data";
 import { setDemoSession } from "@/lib/demo-auth";
+import { useIsAuthenticated } from "@/hooks/useIsAuthenticated";
 import type { BeforeInstallPromptEvent } from "@/types";
 
 export default function LoginPage() {
   const router = useRouter();
+  // Si el user YA esta logueado (porque la PWA tiene start_url = /auth/login
+  // y una sesion persistida de un uso anterior), lo redirigimos al home en
+  // el siguiente tick. Evita que vea el login innecesariamente.
+  const { authenticated, loading: authLoading } = useIsAuthenticated();
+  useEffect(() => {
+    if (!authLoading && authenticated) {
+      router.replace("/");
+    }
+  }, [authLoading, authenticated, router]);
   // Regla de UX: despues del login SIEMPRE vamos al home. Ignoramos el
   // callbackUrl (aunque el que redirigio aca lo haya mandado) porque el
   // user lo prefiere asi — evita que entre al carrito/checkout/producto
