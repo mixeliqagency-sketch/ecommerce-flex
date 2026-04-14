@@ -25,15 +25,24 @@ export function ReferralSection() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // En demo mode usamos el email del DEMO_USER porque no hay session real
-    // de NextAuth. Sin este fallback, el useEffect salia temprano y el loading
-    // quedaba stuck en "Cargando referidos..." para siempre.
-    const email = isDemoModeClient() ? DEMO_USER.email : session?.user?.email;
-    if (!email) {
+    // DEMO_MODE: el endpoint /api/referidos requiere NextAuth, y en demo no
+    // hay session real, asi que devuelve 401. Bypasseamos el fetch y mostramos
+    // un referral fake hardcoded — el usuario ve el link de ejemplo y el flow
+    // visual completo sin tocar el backend.
+    if (isDemoModeClient()) {
+      setReferral({
+        codigo: "DEMO1234",
+        total_clicks: 12,
+        total_conversiones: 3,
+      });
       setLoading(false);
       return;
     }
-    const userId = encodeURIComponent(email);
+    if (!session?.user?.email) {
+      setLoading(false);
+      return;
+    }
+    const userId = encodeURIComponent(session.user.email);
     fetch(`/api/referidos/${userId}`)
       .then((res) => {
         if (!res.ok) throw new Error("Error cargando referidos");
