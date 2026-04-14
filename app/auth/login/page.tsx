@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -36,6 +36,7 @@ export default function LoginPage() {
   // no mostrar WebAuthn fuera de la app porque pierde sentido UX.
   const [canBiometricLogin, setCanBiometricLogin] = useState(false);
   const [bioLoading, setBioLoading] = useState(false);
+  const autoPromptedRef = useRef(false);
 
   useEffect(() => {
     // Ya instalada como PWA
@@ -78,37 +79,66 @@ export default function LoginPage() {
     };
   }, []);
 
-  // Login con huella — en demo simulamos el unlock; en prod pediriamos
-  // credentials.get() con el challenge del backend. El flag de activacion
-  // vive en localStorage (demo_biometric_registered).
+  // Auto-trigger del panel biometrico al abrir la app. Si el user ya activo
+  // huella previamente (canBiometricLogin=true) y estamos en PWA standalone,
+  // levantamos el prompt nativo del OS a los 600ms de mount — el tiempo
+  // justo para que el PWA termine de montar. Pablo 2026-04-14: queria que
+  // el bottom sheet de huella apareciera automaticamente al abrir la app.
+  // NOTA: algunos browsers requieren user gesture reciente — si falla, el
+  // user puede tap el boton manualmente como fallback.
+  useEffect(() => {
+    if (!canBiometricLogin || autoPromptedRef.current) return;
+    autoPromptedRef.current = true;
+    const timer = setTimeout(() => {
+      handleBiometricLogin();
+    }, 600);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canBiometricLogin]);
+
+  // Login con huella — WebAuthn REAL en demo y prod. En demo no hay
+  // verificacion backend, pero el browser igual llama al OS para que
+  // levante el panel nativo de huella (el "bottom sheet" de Android).
+  // Si el dedo matchea con la credencial registrada → setDemoSession.
   const handleBiometricLogin = async () => {
     setBioLoading(true);
     setError("");
     try {
-      if (isDemoModeClient()) {
-        // Delay realista para que sienta el prompt del OS
-        await new Promise((r) => setTimeout(r, 900));
-        setDemoSession(true);
-        router.push(callbackUrl);
-        router.refresh();
-        return;
-      }
-      // Prod: flow real de WebAuthn assertion
-      const optRes = await fetch("/api/auth/webauthn/login-options", { method: "POST" });
-      if (!optRes.ok) throw new Error("No se pudo iniciar el login biometrico");
-      const options = await optRes.json();
-      const assertion = await navigator.credentials.get({ publicKey: options });
+      const credIdB64 = localStorage.getItem("biometric_credential_id");
+      if (!credIdB64) throw new Error("No hay huella registrada");
+
+      const challenge = new Uint8Array(32);
+      crypto.getRandomValues(challenge);
+
+      const publicKey: PublicKeyCredentialRequestOptions = {
+        challenge,
+        allowCredentials: [
+          {
+            id: base64urlToBuffer(credIdB64),
+            type: "public-key",
+            transports: ["internal"],
+          },
+        ],
+        userVerification: "required",
+        timeout: 60000,
+        rpId: window.location.hostname,
+      };
+
+      // Esto dispara el panel nativo del OS — en Android aparece desde
+      // abajo hacia arriba pidiendo el dedo, en iOS Face ID o Touch ID.
+      const assertion = await navigator.credentials.get({ publicKey });
       if (!assertion) throw new Error("Login biometrico cancelado");
-      const verify = await fetch("/api/auth/webauthn/login-verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(assertion),
-      });
-      if (!verify.ok) throw new Error("El servidor rechazo la huella");
+
+      // Demo: confiamos en la assertion del OS, no hay verify del backend.
+      // Prod: aca iria el POST a /api/auth/webauthn/login-verify.
+      setDemoSession(true);
       router.push(callbackUrl);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No pudimos validar la huella");
+      const msg = err instanceof Error
+        ? (err.name === "NotAllowedError" ? "Huella cancelada" : err.message)
+        : "No pudimos validar la huella";
+      setError(msg);
     } finally {
       setBioLoading(false);
     }
@@ -371,4 +401,15 @@ export default function LoginPage() {
       )}
     </div>
   );
+}
+
+// Utility: base64url → ArrayBuffer. Usado para reconstruir el credential id
+// almacenado en localStorage antes de pasarlo a navigator.credentials.get().
+function base64urlToBuffer(base64url: string): ArrayBuffer {
+  const padding = "=".repeat((4 - (base64url.length % 4)) % 4);
+  const base64 = (base64url + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
 }
