@@ -118,11 +118,20 @@ export default function Header() {
             )}
           </Link>
 
-          {/* Carrito */}
+          {/* Carrito — si el user NO esta autenticado, el click manda a login
+              en vez de abrir el drawer. Regla UX (Pablo 2026-04-14): sin
+              sesion no se puede hacer nada con el carrito. Ademas el badge
+              tampoco se muestra para no confundir a un visitante deslogueado. */}
           <button
-            onClick={openCart}
+            onClick={() => {
+              if (!session) {
+                router.push("/auth/login?callbackUrl=/");
+                return;
+              }
+              openCart();
+            }}
             className="w-11 h-11 flex items-center justify-center text-text-primary hover:text-accent-emerald transition-colors flex-shrink-0"
-            aria-label={totalItems > 0 ? `Carrito con ${totalItems} productos` : "Carrito vacio"}
+            aria-label={session && totalItems > 0 ? `Carrito con ${totalItems} productos` : "Carrito — iniciar sesion"}
           >
             {/* Wrapper relative para anclar el badge al ICONO, no al boton.
                 Antes el badge usaba -top-1.5 sobre el boton w-11 h-11 y se
@@ -133,7 +142,7 @@ export default function Header() {
                 <circle cx="20" cy="21" r="1" />
                 <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
               </svg>
-              {totalItems > 0 && (
+              {session && totalItems > 0 && (
                 <span className="absolute top-0 right-0 translate-x-[70%] -translate-y-1/3 bg-accent-red text-white text-[9px] font-bold rounded-full min-w-[14px] h-[14px] px-0.5 flex items-center justify-center ring-2 ring-bg-primary" aria-hidden="true">
                   {totalItems > 9 ? "9+" : totalItems}
                 </span>

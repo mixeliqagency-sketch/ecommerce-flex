@@ -9,11 +9,13 @@ import BiometricActivation from "@/components/auth/BiometricActivation";
 import { useIsAuthenticated } from "@/hooks/useIsAuthenticated";
 import { setDemoSession, setDemoAdmin, useDemoAdmin, DEMO_USER } from "@/lib/demo-auth";
 import { isDemoModeClient } from "@/lib/demo-data";
+import { useCart } from "@/context/CartContext";
 
 export default function CuentaPage() {
   const { data: session } = useSession();
   const { authenticated, loading: authLoading } = useIsAuthenticated();
   const { isAdmin: isDemoAdminActive } = useDemoAdmin();
+  const { clearCart } = useCart();
   const router = useRouter();
 
   // El user es admin del panel si:
@@ -98,8 +100,13 @@ export default function CuentaPage() {
   const displayUser = isDemoModeClient() ? DEMO_USER : session?.user;
   const initial = displayUser?.name?.charAt(0)?.toUpperCase() || "U";
 
-  // Cerrar sesion — clear NextAuth Y demo session a la vez
+  // Cerrar sesion — clear NextAuth Y demo session Y el carrito a la vez.
+  // Regla UX (Pablo 2026-04-14): si el user se desloguea, el carrito no
+  // puede quedar persistido con items — tiene que ser una sesion fresca
+  // cuando vuelva a loguear. Ademas el Header bloquea el icono del carrito
+  // cuando no hay auth.
   const handleLogout = () => {
+    clearCart();
     if (isDemoModeClient()) {
       setDemoSession(false);
       router.push("/");

@@ -60,6 +60,19 @@ function ProductosPageInner() {
     fetchProducts();
   }, [fetchProducts]);
 
+  // Rango real de precios derivado de los productos cargados. Lo usamos
+  // como "baseline" para saber si el user modifico el rango — antes
+  // comparabamos contra sentinelas hardcoded (0 y 100000), pero la
+  // FilterSidebar al montar los reemplaza por los min/max reales de los
+  // datos. Eso hacia que el contador marcara 1 filtro activo sin que el
+  // user haya tocado nada (bug reportado por Pablo 2026-04-14).
+  const { realMin, realMax } = (() => {
+    if (products.length === 0) return { realMin: 0, realMax: 100000 };
+    const prices = products.map((p) => p.precio);
+    return { realMin: Math.min(...prices), realMax: Math.max(...prices) };
+  })();
+  const priceFilterActive = precioMin > realMin || precioMax < realMax;
+
   // Filtrado local por sidebar (categorias, marcas, precio)
   const filteredProducts = products.filter((p) => {
     // Filtro por categorias del sidebar (si hay alguna seleccionada)
@@ -67,20 +80,19 @@ function ProductosPageInner() {
     // Filtro por marca
     if (filterBrands.length > 0 && !filterBrands.includes(p.marca)) return false;
     // Filtro por rango de precio — solo aplicar si el user modifico el rango
-    // (si precioMin == 0 y precioMax == 100000, son los defaults sin tocar y
-    // no deberian filtrar nada)
-    if (precioMin > 0 && p.precio < precioMin) return false;
-    if (precioMax < 100000 && p.precio > precioMax) return false;
+    // respecto del minimo/maximo real de los productos disponibles.
+    if (precioMin > realMin && p.precio < precioMin) return false;
+    if (precioMax < realMax && p.precio > precioMax) return false;
     return true;
   });
 
-  // Contador de filtros activos — para badge en el boton "Filtros"
-  // Solo cuentan categorias y marcas seleccionadas; el rango de precio
-  // cuenta como 1 si el user lo modifico.
+  // Contador de filtros activos — para badge en el boton "Filtros".
+  // Solo cuentan categorias/marcas seleccionadas y el rango de precio si
+  // el user lo movio de los limites reales del dataset.
   const activeFiltersCount =
     filterCats.length +
     filterBrands.length +
-    ((precioMin > 0 || precioMax < 100000) ? 1 : 0);
+    (priceFilterActive ? 1 : 0);
   const hasActiveFilters = activeFiltersCount > 0;
 
   // Sidebar de filtros reutilizable (se renderiza en mobile y desktop).
