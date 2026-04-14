@@ -214,7 +214,10 @@ export default function FilterSidebar({
         </div>
       )}
 
-      {/* Precio */}
+      {/* Precio — el filtro NO se aplica al tipear, hay un boton Aplicar
+          explicito para que el user entienda cuando se disparo el filtrado.
+          Antes usabamos onBlur y era confuso — no quedaba claro si estabas
+          filtrando o solo editando. */}
       <div>
         <h4 className="font-heading font-bold text-xs uppercase tracking-wider text-text-secondary mb-3">
           Precio
@@ -224,7 +227,7 @@ export default function FilterSidebar({
             type="text"
             value={minInput}
             onChange={(e) => setMinInput(e.target.value)}
-            onBlur={handleMinBlur}
+            onKeyDown={(e) => { if (e.key === "Enter") { handleMinBlur(); handleMaxBlur(); } }}
             aria-label="Precio minimo"
             className="w-full bg-bg-card border border-border-glass rounded-lg text-sm text-text-primary px-3 py-2 focus:outline-none focus:border-accent-emerald transition-colors"
           />
@@ -233,11 +236,18 @@ export default function FilterSidebar({
             type="text"
             value={maxInput}
             onChange={(e) => setMaxInput(e.target.value)}
-            onBlur={handleMaxBlur}
+            onKeyDown={(e) => { if (e.key === "Enter") { handleMinBlur(); handleMaxBlur(); } }}
             aria-label="Precio maximo"
             className="w-full bg-bg-card border border-border-glass rounded-lg text-sm text-text-primary px-3 py-2 focus:outline-none focus:border-accent-emerald transition-colors"
           />
         </div>
+        <button
+          type="button"
+          onClick={() => { handleMinBlur(); handleMaxBlur(); }}
+          className="mt-2 w-full bg-accent-emerald hover:brightness-110 text-white rounded-lg py-2 text-sm font-semibold transition-all active:scale-[0.98]"
+        >
+          Aplicar
+        </button>
         <p className="text-[10px] text-text-muted mt-1.5">
           Rango disponible: {formatPrice(priceRange.min)} — {formatPrice(priceRange.max)}
         </p>
