@@ -189,7 +189,7 @@ export const themeConfig = {
       "andax",
     ],
     ogImage: "/opengraph-image",
-    themeColor: "#FF6B35",
+    themeColor: "#0A0A0B",
   },
 
   // === COPY ===
@@ -426,7 +426,7 @@ export const themeConfig = {
     pwaShortName: "ANDAX",
     pwaDescription: "Suplementos premium argentinos. Anda con todo.",
     pwaBackgroundColor: "#0F1320",
-    pwaThemeColor: "#FF6B35",
+    pwaThemeColor: "#0A0A0B",
     pwaDisplay: "standalone" as const,
     pwaOrientation: "portrait" as const,
     pwaCategories: ["shopping", "health", "lifestyle"],
