@@ -14,15 +14,16 @@ const { footer: footerCopy } = themeConfig.copy;
 // larga de categorias tecnicas (deportivo, wellness, etc) que ya viven en
 // el filtro lateral de /productos.
 const TIENDA_LINKS = [
-  { href: "/productos",                       label: "ANDA a la tienda" },
-  { href: "/productos?categoria=ofertas",     label: "ANDA a ver nuestros productos" },
-  { href: "/productos?categoria=destacados",  label: "ANDA a destacados" },
+  { href: "/productos", label: "ANDA a la tienda" },
+  { href: "/nosotros",  label: "ANDA a conocernos" },
+  { href: "/blog",      label: "ANDA al blog" },
 ];
 
+// Ayuda: links reales. Contacto abre WhatsApp directo (wa.me), Envios y
+// devoluciones lleva a /terminos donde esta la info real de envios (Ley 24.240).
 const AYUDA_LINKS = [
-  { href: "#", label: "Preguntas frecuentes" },
-  { href: "#", label: "Envios y devoluciones" },
-  { href: "#", label: "Contacto" },
+  { href: "/terminos", label: "Envios y devoluciones", external: false },
+  { href: `https://wa.me/${contact.whatsapp}`, label: "Contacto", external: true },
 ];
 
 const LEGAL_LINKS = [
@@ -180,7 +181,11 @@ export default function Footer() {
             <ul className="space-y-2">
               {AYUDA_LINKS.map((link) => (
                 <li key={link.label}>
-                  <Link href={link.href} className="text-sm text-text-secondary hover:text-text-primary transition-colors">{link.label}</Link>
+                  {link.external ? (
+                    <a href={link.href} target="_blank" rel="noopener noreferrer" className="text-sm text-text-secondary hover:text-text-primary transition-colors">{link.label}</a>
+                  ) : (
+                    <Link href={link.href} className="text-sm text-text-secondary hover:text-text-primary transition-colors">{link.label}</Link>
+                  )}
                 </li>
               ))}
             </ul>

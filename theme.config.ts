@@ -158,14 +158,18 @@ export const themeConfig = {
   assistant: {
     name: "Anda",
     avatar: "/anda-avatar.jpg",
-    greeting: "Hola! Contame que necesitas y te ayudo.",
-    personality: "Cercana, rioplatense, directa. Usa voseo siempre (anda, tenes, podes). Respuestas cortas y accionables. Nunca usa lenguaje medico/clinico ni promete curas. Recomienda productos basandose en lo que el cliente le cuenta, no empuja ventas. Si no sabe algo, lo dice y ofrece contacto por WhatsApp.",
+    greeting: "Hola, ¿en qué puedo ayudarte?",
+    // Tono: español neutro profesional. SIN voseo, SIN modismos rioplatenses,
+    // SIN frases de conmiseración ("qué mal", "ay no"). Cálida pero contenida.
+    // Prioriza retención sobre consuelo — un cliente molesto necesita soluciones,
+    // no comiseración. Ver manejo de quejas en app/api/assistant/route.ts.
+    personality: "Profesional, cálida, español neutro sin modismos regionales. Respuestas claras, breves y accionables. Jamás usa lenguaje médico/clínico ni promete resultados. Recomienda productos con base en lo que el cliente necesita, sin forzar ventas. Si no sabe algo, lo reconoce con honestidad y ofrece contacto directo por WhatsApp.",
     faq: [
-      { label: "Como hago un pedido?",           message: "Como hago para comprar? Contame el paso a paso." },
-      { label: "Que suplemento me conviene?",    message: "Necesito que me recomiendes un suplemento. Contame cuales hay." },
-      { label: "Medios de pago y cuotas",        message: "Que medios de pago aceptan? Tienen cuotas sin interes?" },
-      { label: "Envios y tiempos",               message: "Como funcionan los envios? Cuanto tardan?" },
-      { label: "Tengo un problema con mi pedido", message: "Tengo un problema con mi pedido, me pueden ayudar?" },
+      { label: "¿Cómo hago un pedido?",            message: "¿Cómo hago para comprar? ¿Podés explicarme los pasos?" },
+      { label: "¿Qué suplemento me conviene?",     message: "Me gustaría una recomendación de suplemento. ¿Qué opciones hay?" },
+      { label: "Medios de pago y cuotas",          message: "¿Qué medios de pago aceptan? ¿Hay cuotas sin interés?" },
+      { label: "Envíos y tiempos",                 message: "¿Cómo funcionan los envíos? ¿Cuánto tardan?" },
+      { label: "Tengo un problema con mi pedido",  message: "Tengo un inconveniente con mi pedido, necesito ayuda." },
     ],
   },
 
@@ -453,8 +457,6 @@ export const themeConfig = {
     values: [
       { title: "Movimiento",    desc: "Lo que haces con vos mismo todos los dias." },
       { title: "Accesibilidad", desc: "Los suplementos no son solo para deportistas de elite." },
-      { title: "Honestidad",    desc: "Ingredientes reales, efectos reales, precios reales." },
-      { title: "Argentinismo",  desc: "Hablamos como vos, en voseo, sin copiarle a las marcas gringas." },
     ],
     ctaText: "ANDA a ver los productos",
     ctaHref: "/productos",
@@ -501,7 +503,7 @@ export const themeConfig = {
       },
       tagline: {
         before: "ANDA ",
-        parts: ["POR TUS METAS", "POR TU RITMO", "POR TUS RESULTADOS"],
+        parts: ["TUS METAS", "TU RITMO", "TUS RESULTADOS"],
         // En cada parte las "X" se reemplazan por la letra del finale con estilo
         accentChar: "X",
       },
