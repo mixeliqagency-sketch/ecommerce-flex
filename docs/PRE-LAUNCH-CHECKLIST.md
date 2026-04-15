@@ -1,6 +1,6 @@
 # Ecomflex / ANDAX — Pre-Launch Checklist
 
-> **Estado al 2026-04-13**: Post Fase 3 audit. 23 fixes aplicados, verificado type-check limpio + 7/7 rutas HTTP 200 + 8 auditores consultados (security, dev, play store, SEO, marketing, UX, UI Pro + auditores cruzados).
+> **Estado al 2026-04-14**: Live en https://ecommerce-flex.vercel.app (DEMO_MODE_ALLOW_PRODUCTION). 28 fixes aplicados desde el deploy inicial, flow end-to-end verificado en Android PWA instalada. Biometric login con WebAuthn real funcional en demo. Pendiente: migración Kira/Data + backend WebAuthn producción + dominio propio + Sheets ANDAX productivas.
 >
 > **Uso:** esta lista agrupa TODO lo que falta hacer antes de submitir la app a Google Play Store + abrir la tienda al público. Dividido en **acciones manuales** (Pablo), **acciones de código** (ya hechas o diferidas), y **acciones externas** (servicios de terceros).
 
@@ -234,4 +234,78 @@ Las páginas `/panel/marketing`, `/panel/seo`, `/panel/redes`, `/panel/referidos
 **Reglas de auth en componentes UI:** SIEMPRE usar `useIsAuthenticated()` de `hooks/useIsAuthenticated.ts`. NUNCA `useSession()` directo de NextAuth — esa abstracción cubre demo + prod. Si un componente nuevo tiene que mostrar/ocultar algo según login, ese es el hook.
 
 **CSP en `next.config.js`:** mantener `'unsafe-eval'` en `script-src`. Next.js 14 dev mode lo necesita para Fast Refresh; sin eso la hidratación React se rompe silenciosamente y todos los client components quedan en loading. En production build se podría endurecer, pero solo si ninguna librería de runtime lo necesita (verificar antes de remover).
+
+---
+
+## 🔐 Notas operativas — Auth, PWA y Biometric
+
+### Demo mode en producción pública
+
+Para deployar un showcase público (ej Vercel demo, staging) con DEMO_MODE activo sin que middleware/panel bloqueen rutas protegidas: setear en env vars **`DEMO_MODE_ALLOW_PRODUCTION=true`** además de `DEMO_MODE=true` y `NEXT_PUBLIC_DEMO_MODE=true`. El guard `NODE_ENV !== "production"` de `middleware.ts` + `app/panel/layout.tsx` es "defense in depth" que solo activa el bypass con el opt-in explícito. Sin él, un cliente que deja DEMO_MODE=true por error en prod sigue bloqueado (seguro).
+
+### PWA start_url
+
+`app/manifest.ts` setea `start_url: "/auth/login"`. Al abrir la PWA instalada, arranca en login directamente (no en home). Razones:
+- Si hay sesión activa → `app/auth/login/page.tsx` tiene un `useEffect` con `useIsAuthenticated` que redirige a `/` inmediato
+- Si hay huella activada → el auto-trigger del useEffect dispara WebAuthn a los 600ms → bottom sheet nativo de Android aparece solo
+- Si no hay ni sesión ni huella → login normal
+
+UX resultante: tipo app de banco Galicia/Mercado Pago — abrís la app, pones el dedo, estás adentro.
+
+### Biometric login — regla de captura de email
+
+**Gate crítico:** el card "Acceso con huella digital" en `/cuenta` Y el botón "Ingresar con huella" en `/auth/login` SOLO se muestran si `localStorage.has_email_login === "true"`. Ese flag se setea cuando el user hace login exitoso con **email/password** o **Google OAuth**. Motivo: garantizar captura de email del user para marketing antes de ofrecer un método de login alternativo que pueda saltear la captura. Regla inviolable de ANDAX.
+
+**Implementación:**
+- `handleSubmit` (form email/password) en `login/page.tsx`: después del login OK → `localStorage.setItem("has_email_login", "true")` + `localStorage.setItem("user_email", email)`
+- Botón Google onClick: mismo patrón
+- `BiometricActivation.tsx` useEffect: si `!has_email_login` → `setStatus("unsupported")` (card oculta)
+- `login/page.tsx` `canBiometricLogin` check: también requiere `has_email_login`
+
+### Biometric WebAuthn flow actual (demo mode)
+
+El código usa `navigator.credentials.create()` y `navigator.credentials.get()` de verdad, no simulación. La credencial se almacena en el **Android Keystore** (hardware seguro). Al hacer login, el OS levanta el panel nativo de huella desde abajo (bottom sheet) y valida el dedo contra la credencial guardada.
+
+**Lo que falta para seguridad producción Play Store:**
+- Verificación server-side de la assertion (hoy demo confía en la firma del OS sin verificarla)
+- 4 endpoints: `/api/auth/webauthn/{register-options,register-verify,login-options,login-verify}` usando `@simplewebauthn/server`
+- Tab nueva `users_webauthn` en el Sheet ANDAX: `(user_email, credential_id, public_key_base64, counter, created_at, last_used_at)`
+- `assetlinks.json` con el SHA256 del keystore del TWA generado por Bubblewrap (sin este archivo, Android TWA no asocia credenciales al origen)
+- Remover bypass demo del frontend: challenge y verify deben venir del server
+
+Plan detallado en memoria: `project_andax_webauthn_production.md`. Tiempo estimado: ~1.5h.
+
+### Regla: sin sesión, no hay carrito
+
+`handleLogout` en `/cuenta/page.tsx` llama `clearCart()` antes del redirect. El Header bloquea el botón del carrito cuando `!authenticated`: click → `router.push("/auth/login?callbackUrl=/")` y el badge rojo no se muestra. Sin sesión no se puede ver ni operar el carrito.
+
+### Regla: flag biometric persiste entre sesiones
+
+**NO** limpiar `demo_biometric_registered` ni `biometric_credential_id` en logout. Esos flags tienen que persistir entre sesiones para que el próximo login pueda usar la huella sin re-activación. Si el user quiere opt-out, tiene que hacerlo explícitamente vía el botón "Desactivar huella digital" que vive en el card de `/cuenta` cuando el status es `registered`.
+
+### Branding ANDAX — color tokens
+
+Todos los "dorados" heredados de AOURA (`#C9A96E`) fueron reemplazados por el **naranja de la X del logo** (`#F97316`):
+- `theme.config.ts`: `decorativeBorder: "#F97316"` → aplica automáticamente a Header borderBottom, BottomNav borderTop, cualquier `var(--border-decorative)`
+- `TopBar.tsx`: `goldColor` y `borderColor` hardcoded a `#F97316`
+- **NO tocar la sección crypto/Binance del checkout**: el `#F0B90B` es identidad de marca Binance/crypto payment method, no ANDAX
+
+### Status bar PWA theme color
+
+`theme.config.ts`: `themeColor` y `pwaThemeColor` → `#0A0A0B` (bg-primary dark). Razones UX:
+- Apps premium dark (Instagram, Spotify, X) usan status bar = bg app para continuidad visual
+- El status bar es territorio del OS; competir con iconos del sistema (reloj, batería, wifi) con naranja saturado se ve agresivo
+- Los acentos brand viven en bordes, badges, CTAs, logo — el status bar no es el lugar
+- Si en el futuro se activa light mode, usar `<meta theme-color media="(prefers-color-scheme)">` para responsive
+
+### Panel admin mobile nav
+
+`app/panel/layout.tsx` tiene un nav horizontal scrollable siempre visible con las 8 tabs: Dashboard, Pedidos, Cupones, SEO, Marketing, Redes, Referidos, Config. **NO** usar `hidden md:flex` — rompía la navegación en mobile. El botón "← Tienda" queda arriba a la derecha del título "Panel Admin".
+
+### Textos gated en demo mode
+
+Componentes que requieren backend real tienen bypass en demo mode:
+- `ReferralSection`: fake referral hardcoded (codigo DEMO1234, 12 clicks, 3 conversiones) porque `/api/referidos` requiere NextAuth
+- `PushPermissionPrompt`: cierra el cartel SIEMPRE al clickear "Activar" (no espera respuesta del backend)
+- `useModuleConfig`: lee de localStorage con keys `ecomflex_cfg:*` en demo, de `/api/config` en prod
 
