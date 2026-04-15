@@ -42,15 +42,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Mensaje demasiado largo." }, { status: 400 });
     }
 
-    // Obtener catalogo para que la asistente pueda recomendar productos
+    // Obtener catalogo para que la asistente pueda recomendar productos.
+    // Los precios se pre-formatean en es-AR (punto como separador de miles)
+    // para evitar que el modelo los devuelva en formato US ($33,504).
     let catalogoInfo = "";
     try {
       const products = await getProducts();
+      const fmt = (n: number) =>
+        `${themeConfig.currency.symbol}${n.toLocaleString(themeConfig.currency.locale)}`;
       catalogoInfo = products
         .filter((p) => p.stock > 0)
         .map(
           (p) =>
-            `- ${p.nombre} (${p.marca}) | ${themeConfig.currency.symbol}${p.precio} | Categoria: ${p.categoria} | Slug: ${p.slug}`
+            `- ${p.nombre} (${p.marca}) | ${fmt(p.precio)} | Categoria: ${p.categoria} | Slug: ${p.slug}`
         )
         .join("\n");
     } catch {
@@ -75,6 +79,13 @@ REGLAS DE TONO (INVIOLABLES):
 - Cálida pero contenida. Profesional pero humana.
 - Respuestas breves: máximo 3 párrafos, idealmente 2. Cortas como en chat, no correos.
 - Como máximo un emoji por respuesta, y solo si encaja con el tono. NUNCA emojis en respuestas a quejas o clientes molestos.
+
+FORMATO DE TEXTO (CRÍTICO — el chat NO renderiza markdown):
+- NUNCA uses **negritas** con asteriscos, ni *cursiva*, ni \`código\`, ni encabezados con #.
+- NUNCA uses markdown de ningún tipo. El chat muestra texto plano: los asteriscos aparecen literales y quedan feos.
+- Para listas, usa números o guiones simples al principio de línea (1. / 2. / - ).
+- Si querés destacar un nombre de producto, escribilo normal sin asteriscos: "Creatina Star Nutrition 300g — $33.504".
+- Los precios vienen ya formateados en el catálogo (ej: $33.504). Úsalos tal cual, no los reformatees.
 
 QUÉ PUEDES HACER:
 1. Recomendar productos según lo que busca el cliente

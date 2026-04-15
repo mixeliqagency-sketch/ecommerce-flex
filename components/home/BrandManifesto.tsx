@@ -230,7 +230,7 @@ export default function BrandManifesto() {
               <span className="text-accent-orange font-black">{manifesto.tagline.accentChar}</span>
               {" "}
               {part}
-              {i < manifesto.tagline.parts.length - 1 ? ". " : "."}
+              {i < manifesto.tagline.parts.length - 1 ? ", " : "."}
             </span>
           ))}
         </p>
