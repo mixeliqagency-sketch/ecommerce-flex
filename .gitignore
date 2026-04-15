@@ -6,4 +6,5 @@ node_modules/
 next-env.d.ts
 .vercel
 
-.vercel
+# Backups locales (JSONs de flows n8n, prompts exportados, etc.)
+backups/

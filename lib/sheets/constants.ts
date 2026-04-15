@@ -7,7 +7,6 @@ export const RANGES = {
   PEDIDOS: "Pedidos!A2:Q",
   USUARIOS: "Usuarios!A2:G",
   RESENAS: "Resenas!A2:K",
-  PERFILES: "Perfiles!A2:P",
   WEBAUTHN: "WebAuthn!A2:E",
   CUPONES: "Cupones!A2:G",
   CONFIG: "Config!A2:C",
@@ -19,7 +18,7 @@ export const RANGES = {
   KEYWORDS: "Keywords!A2:E",
   EMAILS_LOG: "EmailsLog!A2:H",
   REFERIDOS: "Referidos!A2:H",
-  PUSH_SUBS: "PushSubs!A2:H",
+  PUSH_SUBS: "PushTokens!A2:H",
   SOCIAL_LOG: "SocialLog!A2:I",
 } as const;
 
