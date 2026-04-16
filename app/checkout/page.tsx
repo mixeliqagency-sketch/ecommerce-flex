@@ -761,7 +761,7 @@ export default function CheckoutPage() {
 
                 {/* Precio — siempre visible en el summary cerrado */}
                 <span className="font-heading font-bold text-xs min-[400px]:text-sm flex-shrink-0 text-text-primary">
-                  {usdtAmount ? `${usdtAmount} USDT` : formatPrice(total)}
+                  {usdtAmount ? `${usdtAmount} USDT` : formatPrice(totalCrypto)}
                 </span>
 
                 {/* Flecha indicadora */}
@@ -775,37 +775,51 @@ export default function CheckoutPage() {
 
               {/* Contenido del acordeon Crypto */}
               <div className="px-3 min-[400px]:px-4 pb-4 pt-2 space-y-4 border-t border-yellow-500/20">
-                {/* Panel de datos estilo Binance */}
-                <div className="rounded-lg p-4 space-y-3 bg-yellow-500/5 border border-yellow-500/20">
+                {/* 1. Resumen del carrito con cupón */}
+                <CartSummary
+                  items={items}
+                  descuento={cuponDescuento}
+                  labelDescuento={appliedCoupon ? `Cupón ${appliedCoupon.codigo} (${appliedCoupon.descuento_porcentaje}%)` : undefined}
+                  showCouponInput
+                  onCouponApplied={setAppliedCoupon}
+                />
+
+                {/* 2. Conversión a USDT + wallet + red — todo junto cerca del botón */}
+                <div className="rounded-xl p-4 space-y-3 bg-yellow-500/5 border border-yellow-500/20">
+                  {/* Total en pesos */}
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-sm text-text-secondary">Total a pagar</span>
+                    <span className="text-lg font-bold text-text-primary">{formatPrice(totalCrypto)}</span>
+                  </div>
+
+                  {/* Equivalente USDT */}
+                  {usdtAmount ? (
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-sm text-text-secondary">Equivalente USDT</span>
+                      <span className="text-lg font-bold text-yellow-400">{usdtAmount} USDT</span>
+                    </div>
+                  ) : rateLoading ? (
+                    <p className="text-sm text-text-muted animate-pulse">{checkoutCopy.methods.crypto.calculating}</p>
+                  ) : null}
+
+                  {usdtRate && (
+                    <p className="text-[10px] text-text-muted text-right">
+                      Cotización: 1 USDT = {formatPrice(usdtRate)} (referencia, puede variar)
+                    </p>
+                  )}
+
+                  {/* Separador */}
+                  <div className="border-t border-yellow-500/15" />
+
+                  {/* Red */}
                   <div className="flex items-center justify-between">
                     <span className="text-xs uppercase tracking-wider font-semibold text-text-muted">{checkoutCopy.methods.crypto.networkLabel}</span>
-                    <span className="text-sm font-bold px-2 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/30">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/30">
                       {USDT_NETWORK}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs uppercase tracking-wider font-semibold text-text-muted">{checkoutCopy.methods.crypto.amountArsLabel}</span>
-                    <span className="text-sm font-bold text-text-primary">{formatPrice(total)}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs uppercase tracking-wider font-semibold text-text-muted">{checkoutCopy.methods.crypto.amountUsdtLabel}</span>
-                    {rateLoading ? (
-                      <span className="text-sm animate-pulse text-text-muted">{checkoutCopy.methods.crypto.calculating}</span>
-                    ) : usdtAmount ? (
-                      <span className="text-sm font-bold text-text-primary">{usdtAmount} USDT</span>
-                    ) : (
-                      <span className="text-sm text-text-muted">{checkoutCopy.methods.crypto.unavailable}</span>
-                    )}
-                  </div>
-
-                  {usdtRate && (
-                    <p className="text-[10px] text-right text-text-muted">
-                      {checkoutCopy.methods.crypto.rateTemplate.replace("{rate}", formatPrice(Math.round(usdtRate)))}
-                    </p>
-                  )}
-
+                  {/* Wallet */}
                   <div>
                     <span className="text-xs uppercase tracking-wider font-semibold block mb-1.5 text-text-muted">{checkoutCopy.methods.crypto.walletLabel}</span>
                     <div className="flex items-center gap-2">
@@ -823,47 +837,13 @@ export default function CheckoutPage() {
                       </button>
                     </div>
                   </div>
+
+                  <p className="text-[10px] text-text-muted">
+                    {checkoutCopy.methods.crypto.instructionNetwork.replace("{network}", USDT_NETWORK)}. {checkoutCopy.methods.crypto.instructionConfirm}
+                  </p>
                 </div>
 
-                {/* Aviso importante — estilo alerta Binance */}
-                <div className="rounded-lg p-3 bg-yellow-500/5 border border-yellow-500/20">
-                  <p className="text-xs font-semibold mb-1 text-text-primary">{checkoutCopy.methods.crypto.importantTitle}</p>
-                  <ul className="text-xs space-y-1 text-text-muted">
-                    <li>{checkoutCopy.methods.crypto.instructionNetwork.replace("{network}", USDT_NETWORK)}</li>
-                    <li>{checkoutCopy.methods.crypto.instructionAmount.replace("{amount}", usdtAmount ? `(${usdtAmount} USDT)` : "")}</li>
-                    <li>{checkoutCopy.methods.crypto.instructionConfirm}</li>
-                  </ul>
-                </div>
-
-                {/* Resumen del carrito con cupón si aplica */}
-                <CartSummary
-                  items={items}
-                  descuento={cuponDescuento}
-                  labelDescuento={appliedCoupon ? `Cupón ${appliedCoupon.codigo} (${appliedCoupon.descuento_porcentaje}%)` : undefined}
-                  showCouponInput
-                  onCouponApplied={setAppliedCoupon}
-                />
-
-                {/* Precio final + equivalente USDT */}
-                <div className="bg-zinc-900/50 border border-yellow-500/20 rounded-xl p-4 space-y-2">
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-sm text-text-secondary">Total a pagar</span>
-                    <span className="text-lg font-bold text-text-primary">{formatPrice(totalCrypto)}</span>
-                  </div>
-                  {usdtAmount && (
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-sm text-text-secondary">Equivalente en USDT</span>
-                      <span className="text-lg font-bold text-yellow-400">{usdtAmount} USDT</span>
-                    </div>
-                  )}
-                  {usdtRate && (
-                    <p className="text-[10px] text-text-muted text-right">
-                      Cotización: 1 USDT = {formatPrice(usdtRate)} (referencia, puede variar)
-                    </p>
-                  )}
-                </div>
-
-                {/* CTA boton Crypto — dorado Binance, texto oscuro para contraste optimo */}
+                {/* CTA boton Crypto */}
                 <button
                   type="submit"
                   disabled={loading}
