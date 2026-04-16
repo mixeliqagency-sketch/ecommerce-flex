@@ -12,6 +12,7 @@ import BrandWordmark from "@/components/layout/BrandWordmark";
 
 const NAV_LINKS = [
   { href: "/productos", label: "Tus Productos" },
+  { href: "/blog",      label: "Blog" },
 ];
 
 export default function Header() {
