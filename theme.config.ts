@@ -131,7 +131,7 @@ export const themeConfig = {
       },
     },
     crypto: {
-      enabled: true,
+      enabled: false,
       red: "BSC (BEP-20)",
       wallet: "0x3a00ebfaa27c4e4e6555349412d032370225fbbec",
     },
