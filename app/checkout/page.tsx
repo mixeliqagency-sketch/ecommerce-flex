@@ -723,11 +723,8 @@ export default function CheckoutPage() {
               </div>
             </details>
 
-            {/* ================================================
-                ACORDEON 3: CRYPTO USDT — Identidad Binance (dark gold)
-                Fondo oscuro #1E2026 y acento dorado #F0B90B.
-                El usuario cripto reconoce la estetica de Binance al instante.
-            ================================================ */}
+            {/* ACORDEON 3: CRYPTO USDT — solo se muestra si crypto.enabled=true en theme.config */}
+            {payments.crypto.enabled && (
             <details
               open={payMethod === "crypto"}
               className={`rounded-xl border-2 overflow-hidden transition-all ${
@@ -875,6 +872,7 @@ export default function CheckoutPage() {
                 </p>
               </div>
             </details>
+            )}
           </div>
 
           {/* Mensaje de error — visible siempre que haya un error activo */}
