@@ -8,3 +8,5 @@ next-env.d.ts
 
 # Backups locales (JSONs de flows n8n, prompts exportados, etc.)
 backups/
+
+.vercel
