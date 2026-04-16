@@ -64,6 +64,9 @@ export default function CheckoutPage() {
   // Toast de copiado (CBU, Alias, Wallet)
   const [copiedField, setCopiedField] = useState<"cbu" | "alias" | "wallet" | null>(null);
 
+  // Cupón de descuento
+  const [appliedCoupon, setAppliedCoupon] = useState<{ codigo: string; descuento_porcentaje: number } | null>(null);
+
   // Cotizacion USDT (solo se carga cuando el usuario elige crypto)
   const [usdtRate, setUsdtRate] = useState<number | null>(null);
   const [rateLoading, setRateLoading] = useState(false);
@@ -155,9 +158,14 @@ export default function CheckoutPage() {
   const envio = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_COST;
   const total = subtotal + envio;
 
-  // Calcular precio con descuento de transferencia
+  // Descuento cupón (% sobre subtotal)
+  const cuponDescuento = appliedCoupon
+    ? Math.round(subtotal * (appliedCoupon.descuento_porcentaje / 100))
+    : 0;
+
+  // Calcular precio con descuento de transferencia (acumulable con cupón)
   const descuentoMonto = Math.round(subtotal * (TRANSFER_DISCOUNT / 100));
-  const totalConDescuento = total - descuentoMonto;
+  const totalConDescuento = total - descuentoMonto - cuponDescuento;
 
   // Monto en USDT redondeado a 2 decimales
   const usdtAmount = usdtRate ? (total / usdtRate).toFixed(2) : null;
@@ -574,8 +582,10 @@ export default function CheckoutPage() {
                 {/* Resumen del carrito con descuento de transferencia */}
                 <CartSummary
                   items={items}
-                  descuento={descuentoMonto}
-                  labelDescuento={`Descuento transferencia (${TRANSFER_DISCOUNT}%)`}
+                  descuento={descuentoMonto + cuponDescuento}
+                  labelDescuento={appliedCoupon ? `Transferencia (${TRANSFER_DISCOUNT}%) + Cupón ${appliedCoupon.codigo} (${appliedCoupon.descuento_porcentaje}%)` : `Descuento transferencia (${TRANSFER_DISCOUNT}%)`}
+                  showCouponInput
+                  onCouponApplied={setAppliedCoupon}
                 />
 
                 {/* CTA boton transferencia — azul bancario, jerarquia maxima */}
@@ -668,8 +678,14 @@ export default function CheckoutPage() {
 
               {/* Contenido del acordeon MercadoPago */}
               <div className="px-3 min-[400px]:px-4 pb-4 pt-2 space-y-4 border-t border-sky-400/30">
-                {/* Resumen del carrito sin descuento */}
-                <CartSummary items={items} />
+                {/* Resumen del carrito con cupón si aplica */}
+                <CartSummary
+                  items={items}
+                  descuento={cuponDescuento}
+                  labelDescuento={appliedCoupon ? `Cupón ${appliedCoupon.codigo} (${appliedCoupon.descuento_porcentaje}%)` : undefined}
+                  showCouponInput
+                  onCouponApplied={setAppliedCoupon}
+                />
 
                 {/* CTA boton MercadoPago — celeste oficial */}
                 <button
@@ -816,8 +832,14 @@ export default function CheckoutPage() {
                   </ul>
                 </div>
 
-                {/* Resumen del carrito sin descuento */}
-                <CartSummary items={items} />
+                {/* Resumen del carrito con cupón si aplica */}
+                <CartSummary
+                  items={items}
+                  descuento={cuponDescuento}
+                  labelDescuento={appliedCoupon ? `Cupón ${appliedCoupon.codigo} (${appliedCoupon.descuento_porcentaje}%)` : undefined}
+                  showCouponInput
+                  onCouponApplied={setAppliedCoupon}
+                />
 
                 {/* CTA boton Crypto — dorado Binance, texto oscuro para contraste optimo */}
                 <button
