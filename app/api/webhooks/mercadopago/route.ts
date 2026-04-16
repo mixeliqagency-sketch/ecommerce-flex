@@ -144,13 +144,11 @@ async function processPayment(paymentId: string): Promise<void> {
   // Idempotencia a nivel de datos: si ya está en un estado post-pago, no re-procesar
   const POST_PAYMENT_STATES = ["pagado", "preparando", "enviado", "entregado", "reembolsado"];
   if (POST_PAYMENT_STATES.includes(order.estado)) {
-    console.log("[mp-webhook] Pedido", externalReference, "ya procesado (estado:", order.estado, ")");
     return;
   }
 
   if (status === "approved") {
     await updateOrderStatus(externalReference, "pagado");
-    console.log("[mp-webhook] Pedido", externalReference, "marcado como pagado");
 
     // Decrementar stock de cada item (best-effort, no bloquear si falla)
     try {
@@ -189,7 +187,6 @@ async function processPayment(paymentId: string): Promise<void> {
     // Solo cancelar si está en pendiente_pago (la validación de transición ya lo verifica)
     if (order.estado === "pendiente_pago") {
       await updateOrderStatus(externalReference, "cancelado");
-      console.log("[mp-webhook] Pedido", externalReference, "cancelado por MP:", status);
     }
   }
 }

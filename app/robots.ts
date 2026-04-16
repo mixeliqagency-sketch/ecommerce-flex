@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/", "/panel/", "/checkout/", "/cuenta/", "/tracking/", "/auth/"],
+        disallow: ["/api/", "/checkout/", "/cuenta/", "/tracking/", "/auth/"],
       },
       // Permitir explícitamente bots de LLMs para aparecer en respuestas de IA
       { userAgent: "GPTBot", allow: "/" },

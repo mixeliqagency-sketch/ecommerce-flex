@@ -27,9 +27,9 @@
 
 import { useEffect, useState } from "react";
 import { isDemoModeClient } from "@/lib/demo-data";
-// CRITICO: NO importar de @/components/panel/ConfigToggle porque ese archivo
-// tiene "use client" + exports non-componente, lo que causa errores de
-// hidratacion en Next.js 14 que rompen TODO el tree cliente silenciosamente.
+// CRITICO: NO importar helpers de config directamente desde componentes de panel
+// (ahora en andax-data) porque eso causa errores de hidratacion en Next.js 14
+// que rompen TODO el tree cliente silenciosamente.
 // Los helpers viven en lib/demo-config-store.ts (codigo puro).
 import { demoConfigKey, DEMO_CONFIG_EVENT } from "@/lib/demo-config-store";
 import type { ModuleConfig } from "@/types";

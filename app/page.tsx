@@ -12,7 +12,7 @@ const { brand, home, currency } = themeConfig;
 
 // Iconos para las features de la home — el color se asigna en el JSX segun
 // feature.color (emerald/orange/blue/yellow/red) para que cada card tenga su
-// propia identidad visual, como AOURA.
+// propia identidad visual, como ANDAX.
 const FEATURE_ICONS: Record<string, (className: string) => React.ReactNode> = {
   truck: (className) => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
@@ -152,7 +152,7 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* Features — cada card tiene su propio color AOURA (emerald/orange/blue)
+          {/* Features — cada card tiene su propio color ANDAX (emerald/orange/blue)
               con hover glow + border + icon/text color animado. El color sale de
               themeConfig.home.features[i].color para swap & ship. */}
           <div className="grid grid-cols-1 min-[375px]:grid-cols-3 gap-3 md:gap-6">
@@ -180,7 +180,7 @@ export default async function Home() {
         <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-accent-emerald/5 rounded-full blur-3xl -z-10" />
       </section>
 
-      {/* Manifesto acrostico A-N-D-A-X² estilo AOURA */}
+      {/* Manifesto acrostico A-N-D-A-X² */}
       <BrandManifesto />
 
       {/* Productos destacados */}

@@ -21,8 +21,7 @@ const IS_DEMO =
     process.env.DEMO_MODE_ALLOW_PRODUCTION === "true");
 
 export default function middleware(req: NextRequest) {
-  // En demo: dejamos pasar todo. El panel /panel/* tambien queda accesible
-  // porque en demo no hay datos sensibles reales.
+  // En demo: dejamos pasar todo.
   if (IS_DEMO) return NextResponse.next();
   // @ts-expect-error next-auth middleware tiene una firma que acepta NextRequest
   return authMiddleware(req);
@@ -33,6 +32,5 @@ export const config = {
     "/checkout/:path*",
     "/cuenta/:path*",
     "/tracking/:path*",
-    "/panel/:path*",     // Panel de administración — requiere login Y rol admin
   ],
 };

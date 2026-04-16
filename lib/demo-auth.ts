@@ -16,10 +16,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { isDemoModeClient } from "@/lib/demo-data";
 
 const STORAGE_KEY = "demo_session_active";
-const ADMIN_KEY = "demo_session_admin";
 const EVENT = "demo-session-change";
 
 // Nombre de usuario fake — lo mostramos en /cuenta cuando esta logueado en demo
@@ -35,8 +33,6 @@ export function setDemoSession(active: boolean): void {
     localStorage.setItem(STORAGE_KEY, "true");
   } else {
     localStorage.removeItem(STORAGE_KEY);
-    // Si cerras sesion, tambien perdes el modo admin (seguridad por defecto)
-    localStorage.removeItem(ADMIN_KEY);
   }
   // Disparar un evento para que el hook en otros componentes se entere.
   // El evento 'storage' del browser solo dispara entre tabs distintas, no
@@ -47,31 +43,6 @@ export function setDemoSession(active: boolean): void {
 export function isDemoLoggedIn(): boolean {
   if (typeof window === "undefined") return false;
   return localStorage.getItem(STORAGE_KEY) === "true";
-}
-
-/**
- * Demo admin toggle — solo relevante en DEMO_MODE. Permite simular ser el
- * dueno de la tienda para probar el /panel sin configurar NextAuth + Sheets.
- * Requiere que haya una session demo activa primero (no podes ser admin
- * sin estar logueado).
- */
-export function setDemoAdmin(active: boolean): void {
-  if (typeof window === "undefined") return;
-  if (active && !isDemoLoggedIn()) {
-    console.warn("[demo-auth] setDemoAdmin(true) ignorado — requiere session demo activa");
-    return;
-  }
-  if (active) {
-    localStorage.setItem(ADMIN_KEY, "true");
-  } else {
-    localStorage.removeItem(ADMIN_KEY);
-  }
-  window.dispatchEvent(new Event(EVENT));
-}
-
-export function isDemoAdmin(): boolean {
-  if (typeof window === "undefined") return false;
-  return localStorage.getItem(ADMIN_KEY) === "true" && isDemoLoggedIn();
 }
 
 /**
@@ -100,25 +71,3 @@ export function useDemoSession(): { active: boolean; mounted: boolean } {
   return { active, mounted };
 }
 
-/**
- * Hook reactivo para el estado "soy admin" en demo mode.
- */
-export function useDemoAdmin(): { isAdmin: boolean; mounted: boolean } {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setIsAdmin(isDemoAdmin());
-    setMounted(true);
-
-    const handler = () => setIsAdmin(isDemoAdmin());
-    window.addEventListener(EVENT, handler);
-    window.addEventListener("storage", handler);
-    return () => {
-      window.removeEventListener(EVENT, handler);
-      window.removeEventListener("storage", handler);
-    };
-  }, []);
-
-  return { isAdmin, mounted };
-}

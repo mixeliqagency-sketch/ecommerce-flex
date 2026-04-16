@@ -2,7 +2,7 @@
 
 // Card de "Activar huella digital" — usa WebAuthn (PublicKeyCredential API)
 // para registrar una credencial biométrica en el dispositivo. Portado del flow
-// de AOURA con simplificaciones para Ecomflex + soporte DEMO_MODE.
+// portado de AOURA v1 con simplificaciones para Ecomflex + soporte DEMO_MODE.
 //
 // Flow:
 //   1. Usuario clickea "Activar"

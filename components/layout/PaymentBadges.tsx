@@ -1,8 +1,7 @@
 // components/layout/PaymentBadges.tsx
-// Badges de medios de pago — portado PIXEL-PERFECT del Footer de AOURA v1
-// (ver aura/components/layout/Footer.tsx lineas 139-191).
+// Badges de medios de pago — portado del Footer de AOURA v1.
 //
-// Layout AOURA: los badges y el texto informativo viven en UNA MISMA FILA con
+// Layout: los badges y el texto informativo viven en UNA MISMA FILA con
 // flex-wrap. Cada badge tiene el MISMO alto (h-8) pero ancho variable segun el
 // contenido (Visa mas angosta, Mastercard un poco mas ancha por el texto,
 // MercadoPago la mas ancha por "MercadoPago" inline). El texto "Hasta 12
@@ -10,7 +9,7 @@
 // aparte abajo. La fila 2 repite el patron con USDT.
 //
 // REGLA ECOMFLEX: el toggle de cada metodo (crypto.enabled, mercadopago.enabled)
-// viene de themeConfig. Los SVG son del diseño AOURA y no se tocan por tienda.
+// viene de themeConfig. Los SVG son del diseño original y no se tocan por tienda.
 
 import { themeConfig } from "@/theme.config";
 

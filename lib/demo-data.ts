@@ -7,8 +7,8 @@
 // revisar branding/UX sin tener credenciales reales.
 //
 // Los 12 productos estan basados en publicaciones reales de MercadoLibre
-// Argentina (marzo 2026), portados desde el proyecto AOURA v1
-// (aura/app/api/seed/route.ts). Las fotos vienen directo del CDN de ML.
+// Argentina (marzo 2026), portados desde AOURA v1. Las fotos vienen directo
+// del CDN de ML.
 //
 // NO subir DEMO_MODE=true a produccion. En produccion la variable no existe
 // y todo el codigo vuelve a consultar Sheets normal.

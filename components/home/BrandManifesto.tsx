@@ -1,6 +1,6 @@
 "use client";
 
-// BrandManifesto — acrostico vertical animado, estilo AOURA.
+// BrandManifesto — acrostico vertical animado.
 //
 // Cada fila entra lateralmente con micro-overshoot cinematico (keyframes en
 // globals.css). La ultima letra (finale) tiene animaciones extras: spin 360°

@@ -63,7 +63,7 @@ export default function TopBar() {
   if (PROMOS.length === 0) return null;
 
   const promo = PROMOS[index];
-  // Paleta ANDAX — reemplaza el dorado AOURA (#C9A96E) por el naranja de
+  // Paleta ANDAX — reemplaza el dorado original (#C9A96E) por el naranja de
   // la X del logo (#F97316). Solo cambian goldColor + borderColor; el
   // fondo negro premium y el texto blanco se mantienen como antes.
   const bgColor = isLight ? "#FAF6F0" : "#0A0A0B";

@@ -38,8 +38,7 @@ export async function POST(req: NextRequest) {
       }
     } catch (err) {
       console.error("[api/email/subscribe] Error al suscribir:", err);
-      // Fallback: loguear para que Pablo vea el email
-      console.log("[email-captured]", email, source);
+      // Fallback: el error ya se logueó arriba con console.error
     }
 
     return NextResponse.json({ success: true });
