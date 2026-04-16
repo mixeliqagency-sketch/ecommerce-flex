@@ -167,8 +167,11 @@ export default function CheckoutPage() {
   const descuentoMonto = Math.round(subtotal * (TRANSFER_DISCOUNT / 100));
   const totalConDescuento = total - descuentoMonto - cuponDescuento;
 
-  // Monto en USDT redondeado a 2 decimales
-  const usdtAmount = usdtRate ? (total / usdtRate).toFixed(2) : null;
+  // Total crypto = subtotal + envío - cupón (sin descuento transferencia, es otro método)
+  const totalCrypto = total - cuponDescuento;
+
+  // Monto en USDT redondeado a 2 decimales (sobre total con cupón aplicado)
+  const usdtAmount = usdtRate ? (totalCrypto / usdtRate).toFixed(2) : null;
 
   // Copiar texto al portapapeles con toast de confirmacion
   const handleCopy = async (text: string, field: "cbu" | "alias" | "wallet") => {
@@ -840,6 +843,25 @@ export default function CheckoutPage() {
                   showCouponInput
                   onCouponApplied={setAppliedCoupon}
                 />
+
+                {/* Precio final + equivalente USDT */}
+                <div className="bg-zinc-900/50 border border-yellow-500/20 rounded-xl p-4 space-y-2">
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-sm text-text-secondary">Total a pagar</span>
+                    <span className="text-lg font-bold text-text-primary">{formatPrice(totalCrypto)}</span>
+                  </div>
+                  {usdtAmount && (
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-sm text-text-secondary">Equivalente en USDT</span>
+                      <span className="text-lg font-bold text-yellow-400">{usdtAmount} USDT</span>
+                    </div>
+                  )}
+                  {usdtRate && (
+                    <p className="text-[10px] text-text-muted text-right">
+                      Cotización: 1 USDT = {formatPrice(usdtRate)} (referencia, puede variar)
+                    </p>
+                  )}
+                </div>
 
                 {/* CTA boton Crypto — dorado Binance, texto oscuro para contraste optimo */}
                 <button
