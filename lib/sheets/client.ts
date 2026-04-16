@@ -1,5 +1,12 @@
 // lib/sheets/client.ts
-// Singleton de autenticación y conexión a Google Sheets (2 sheets: pública + privada)
+// Singleton de autenticación y conexión a Google Sheets.
+// ANDAX usa UN solo Sheet para todo ("ANDAX - Base de Datos").
+// Las funciones getPublicSheetId/getPrivateSheetId apuntan al mismo ID.
+//
+// Env vars soportadas (en orden de prioridad):
+// - GOOGLE_SHEETS_CLIENT_EMAIL / GOOGLE_SERVICE_ACCOUNT_EMAIL
+// - GOOGLE_SHEETS_PRIVATE_KEY / GOOGLE_PRIVATE_KEY
+// - GOOGLE_SHEETS_PUBLIC_ID / GOOGLE_SHEETS_PRIVATE_ID / GOOGLE_SHEETS_ID
 
 import { google, sheets_v4 } from "googleapis";
 
@@ -10,11 +17,20 @@ let sheetsClient: sheets_v4.Sheets | null = null;
 
 function getAuth(): InstanceType<typeof google.auth.GoogleAuth> {
   if (!authClient) {
-    const email = process.env.GOOGLE_SHEETS_CLIENT_EMAIL;
-    const key = process.env.GOOGLE_SHEETS_PRIVATE_KEY?.replace(/\\n/g, "\n");
+    // Soportar ambos nombres de env var (consumer legacy + ANDAX nuevo)
+    const email =
+      process.env.GOOGLE_SHEETS_CLIENT_EMAIL ||
+      process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    const key = (
+      process.env.GOOGLE_SHEETS_PRIVATE_KEY ||
+      process.env.GOOGLE_PRIVATE_KEY ||
+      ""
+    ).replace(/\\n/g, "\n");
 
     if (!email || !key) {
-      throw new Error("GOOGLE_SHEETS_CLIENT_EMAIL y GOOGLE_SHEETS_PRIVATE_KEY son requeridos");
+      throw new Error(
+        "Se necesita GOOGLE_SERVICE_ACCOUNT_EMAIL y GOOGLE_PRIVATE_KEY (o sus variantes GOOGLE_SHEETS_*)"
+      );
     }
 
     authClient = new google.auth.GoogleAuth({
@@ -30,28 +46,31 @@ function getAuth(): InstanceType<typeof google.auth.GoogleAuth> {
 
 export function getSheets(): sheets_v4.Sheets {
   if (!sheetsClient) {
-    sheetsClient = google.sheets({ version: "v4", auth: getAuth() });
+    sheetsClient = google.sheets({ version: "v4" as const, auth: getAuth() as any });
   }
   return sheetsClient;
 }
 
-// En DEMO_MODE retornamos un stub string para que el codigo que hace
-// getPublicSheetId() no crashee al bootear. Los modulos de lib/sheets/*.ts
-// ya tienen fallback a demo data antes de llegar a llamar a Sheets en modo demo.
+// ANDAX usa UN solo Sheet para todo — ambas funciones buscan el ID
+// con fallback a GOOGLE_SHEETS_ID (nombre unificado).
 export function getPublicSheetId(): string {
-  const id = process.env.GOOGLE_SHEETS_PUBLIC_ID;
+  const id =
+    process.env.GOOGLE_SHEETS_PUBLIC_ID ||
+    process.env.GOOGLE_SHEETS_ID;
   if (!id) {
     if (process.env.DEMO_MODE === "true") return "demo-public";
-    throw new Error("GOOGLE_SHEETS_PUBLIC_ID es requerido");
+    throw new Error("GOOGLE_SHEETS_ID es requerido");
   }
   return id;
 }
 
 export function getPrivateSheetId(): string {
-  const id = process.env.GOOGLE_SHEETS_PRIVATE_ID;
+  const id =
+    process.env.GOOGLE_SHEETS_PRIVATE_ID ||
+    process.env.GOOGLE_SHEETS_ID;
   if (!id) {
     if (process.env.DEMO_MODE === "true") return "demo-private";
-    throw new Error("GOOGLE_SHEETS_PRIVATE_ID es requerido");
+    throw new Error("GOOGLE_SHEETS_ID es requerido");
   }
   return id;
 }
