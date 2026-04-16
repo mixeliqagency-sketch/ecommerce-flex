@@ -137,6 +137,20 @@ export default function ShopAssistant() {
                       </p>
                     </div>
                   </div>
+                  {/* Botón X — SOLO en mobile (md:hidden). En desktop el botón
+                      flotante 'Cerrar' queda visible fuera del panel, pero en
+                      mobile el panel ocupa toda la pantalla y tapa al flotante,
+                      así que sin este X no habría forma de cerrar. */}
+                  <button
+                    onClick={closeAssistant}
+                    className="md:hidden text-text-muted hover:text-text-primary transition-colors p-1 -mr-1 flex-shrink-0"
+                    aria-label="Cerrar"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
                 </div>
 
                 <h2 className="font-heading text-lg font-bold text-text-primary mb-1">
