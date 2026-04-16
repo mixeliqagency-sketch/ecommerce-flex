@@ -3,27 +3,18 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { ReferralSection } from "@/components/tienda/ReferralSection";
 import BiometricActivation from "@/components/auth/BiometricActivation";
 import { useIsAuthenticated } from "@/hooks/useIsAuthenticated";
-import { setDemoSession, setDemoAdmin, useDemoAdmin, DEMO_USER } from "@/lib/demo-auth";
+import { setDemoSession, DEMO_USER } from "@/lib/demo-auth";
 import { isDemoModeClient } from "@/lib/demo-data";
 import { useCart } from "@/context/CartContext";
 
 export default function CuentaPage() {
   const { data: session } = useSession();
   const { authenticated, loading: authLoading } = useIsAuthenticated();
-  const { isAdmin: isDemoAdminActive } = useDemoAdmin();
   const { clearCart } = useCart();
   const router = useRouter();
-
-  // El user es admin del panel si:
-  //  a) produccion: session.user.role === "admin" en Sheets
-  //  b) demo: la perilla "Soy el dueño (demo)" esta activa en localStorage
-  const isPanelAdmin = isDemoModeClient()
-    ? isDemoAdminActive
-    : session?.user?.role === "admin";
 
   // Foto de perfil
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -200,64 +191,6 @@ export default function CuentaPage() {
           </div>
         </div>
       </div>
-
-      {/* Panel de administracion — solo visible si el user es admin.
-          En prod aparece cuando session.user.role === "admin" en la Sheet.
-          En demo aparece cuando la perilla "Soy el dueño (demo)" esta activa. */}
-      {isPanelAdmin && (
-        <Link
-          href="/panel"
-          className="flex items-center gap-3 bg-bg-card border border-accent-emerald/40 hover:border-accent-emerald rounded-card p-4 transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]"
-        >
-          <div className="w-11 h-11 rounded-full bg-accent-emerald/10 text-accent-emerald flex items-center justify-center flex-shrink-0">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
-            </svg>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-heading font-semibold text-sm text-text-primary">Panel de administración</p>
-            <p className="text-[11px] text-text-muted mt-0.5">Gestionar productos, pedidos, marketing y toggles de módulos</p>
-          </div>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted flex-shrink-0" aria-hidden="true">
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-        </Link>
-      )}
-
-      {/* Perilla "Soy el dueño" — solo en DEMO_MODE, permite simular admin
-          sin configurar NextAuth/Sheets. Tocala ON → se habilita la card
-          "Panel de administracion" arriba. OFF → desaparece. */}
-      {isDemoModeClient() && (
-        <div className="bg-bg-card border border-border-glass rounded-card p-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <p className="font-heading font-semibold text-sm text-text-primary">
-                Soy el dueño (demo)
-              </p>
-              <p className="text-[11px] text-text-muted mt-0.5 leading-snug">
-                Activá esta perilla para desbloquear el panel de administración en modo demo.
-                Simula tener <code className="text-accent-emerald">role: admin</code> sin configurar NextAuth/Sheets.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setDemoAdmin(!isDemoAdminActive)}
-              aria-pressed={isDemoAdminActive}
-              aria-label={`${isDemoAdminActive ? "Desactivar" : "Activar"} modo admin demo`}
-              className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 mt-1 ${
-                isDemoAdminActive ? "bg-accent-emerald" : "bg-gray-600"
-              }`}
-            >
-              <div
-                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                  isDemoAdminActive ? "translate-x-6" : ""
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Acceso biometrico */}
       <BiometricActivation />
